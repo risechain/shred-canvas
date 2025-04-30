@@ -30,38 +30,6 @@ export function useNavigation() {
       label: "Build",
       path: "/build",
       isDisabled: false,
-      // subMenu: [
-      //   {
-      //     id: "build-home",
-      //     label: "Home",
-      //     path: "/build",
-      //     isDisabled: false,
-      //   },
-      //   {
-      //     id: "build-shreds",
-      //     label: "Shreds",
-      //     path: "/build/shreds",
-      //     isDisabled: false,
-      //   },
-      //   {
-      //     id: "build-tools-and-infra",
-      //     label: "Infra & Tooling",
-      //     path: "/build/tools-and-infra",
-      //     isDisabled: false,
-      //   },
-      //   {
-      //     id: "build-aa-demo",
-      //     label: "AA Demo",
-      //     path: "/build/aa-demo",
-      //     isDisabled: false,
-      //   },
-      //   {
-      //     id: "build-shred-demo",
-      //     label: "Shred Demo",
-      //     path: "/build/shred-demo",
-      //     isDisabled: false,
-      //   },
-      // ],
     },
   ];
 
