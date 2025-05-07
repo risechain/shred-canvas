@@ -5,6 +5,7 @@ export type NavigationItem = {
   label: string;
   path: string;
   isDisabled: boolean;
+  icon?: string;
 };
 
 export type Navigation = NavigationItem & {
@@ -15,21 +16,10 @@ export function useNavigation() {
   const navItems: Navigation[] = [
     {
       id: "home",
-      label: "Home",
+      label: "Demo",
       path: "/",
       isDisabled: false,
-    },
-    {
-      id: "apps",
-      label: "Apps",
-      path: "/apps",
-      isDisabled: false,
-    },
-    {
-      id: "build",
-      label: "Build",
-      path: "/build",
-      isDisabled: false,
+      icon: "/icons/buttons/home.svg",
     },
   ];
 

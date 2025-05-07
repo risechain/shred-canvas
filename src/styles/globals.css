@@ -47,13 +47,13 @@
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
 
-  --color-button-bg-primary: var(--purple-9);
+  --color-button-bg-primary: var(--purple-10);
   --color-button-bg-accent: var(--purple-8);
-  --color-button-bg-secondary: var(--gray-2);
+  --color-button-bg-secondary: var(--gray-3);
 
-  --color-text-accent: var(--purple-8);
-  --color-text-primary: var(--purple-9);
-  --color-text-secondary: var(--gray-surface);
+  --color-text-accent: var(--purple-11);
+  --color-text-primary: var(--gray-12);
+  --color-text-secondary: var(--gray-10);
   --color-text-contrast: var(--gray-contrast);
 
   --color-border-primary: var(--gray-6);
@@ -164,7 +164,6 @@
   body {
     @apply bg-background text-foreground;
     background: var(--gray-1);
-    color: var(--gray-12);
     overflow-y: scroll;
   }
 
