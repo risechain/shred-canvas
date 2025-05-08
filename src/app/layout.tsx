@@ -54,7 +54,7 @@ export default function RootLayout({
           <DynamicFavicon />
           <Modal />
           <ToastContainer theme="colored" icon={false} />
-          <main className="mx-auto max-w-10xl w-full h-auto pr-3 relative min-h-vh">
+          <main className="mx-auto max-w-10xl w-full h-auto relative min-h-vh">
             {children}
           </main>
         </AppProvider>
