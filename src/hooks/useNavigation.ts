@@ -23,6 +23,15 @@ export function useNavigation() {
     },
   ];
 
+  const toolbarItems: Navigation[] = [
+    {
+      id: "dics",
+      label: "Docs",
+      path: DOCS,
+      isDisabled: false,
+    },
+  ];
+
   const footerItems: Navigation[] = [
     {
       id: "rise",
@@ -50,5 +59,5 @@ export function useNavigation() {
     },
   ];
 
-  return { navItems, footerItems };
+  return { navItems, footerItems, toolbarItems };
 }
