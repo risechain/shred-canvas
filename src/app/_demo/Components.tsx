@@ -1,15 +1,12 @@
 import { Card as CustomCard } from "@/components/CustomCard";
-import { RiseLogo } from "@/components/RiseLogo";
+import { NavigationBar } from "@/components/NavigationBar";
 import { ToastMessage } from "@/components/ToastMessage";
 import { Button, Card, Separator } from "@/components/ui";
 import { useModal } from "@/hooks/useModal";
-import { MoonIcon, SunIcon } from "lucide-react";
-import { useTheme } from "next-themes";
 import { toast } from "react-toastify";
 
 export function SampleComponents() {
   const { showModal } = useModal();
-  const { theme, setTheme } = useTheme();
 
   return (
     <div className="grid gap-10 lg:gap-10 items-center justify-center pb-10 text-center">
@@ -122,25 +119,7 @@ export function SampleComponents() {
           Two options for navigation — Sidebar and Navigation bar.{" "}
           <span className="italic">This is a work in progress</span>
         </p>
-        <div className="flex justify-between rounded-sm border border-border-primary w-full p-4">
-          <RiseLogo />
-          <div className="flex items-center justify-start">
-            <Button
-              asChild
-              variant="ghost"
-              className="h-fit p-0 "
-              onClick={() => {
-                setTheme(theme === "light" ? "dark" : "light");
-              }}
-            >
-              {theme === "light" ? (
-                <MoonIcon className="h-4 w-4" />
-              ) : (
-                <SunIcon className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-        </div>
+        <NavigationBar />
       </div>
       <Separator />
       {/* DRAWER */}
