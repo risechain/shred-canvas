@@ -29,9 +29,14 @@ export function SampleComponents() {
           <Card className="w-80 h-40 flex justify-center">
             <p>Default</p>
           </Card>
+          <Card variant="secondary" className="w-80 h-40 flex justify-center">
+            <p>Secondary</p>
+          </Card>
           <CustomCard
-            className="w-80 h-40"
-            innerDiv={{ className: "flex items-center justify-center" }}
+            className="w-80 h-40 md:p-0"
+            innerDiv={{
+              className: "flex items-center justify-center ",
+            }}
           >
             <p>Custom Card</p>
           </CustomCard>

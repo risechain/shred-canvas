@@ -15,7 +15,7 @@ export function NavigationBar() {
     <div className="flex items-center justify-center rounded-sm  w-full pt-2 pb-2.5 px-4 bg-primary">
       <div className="flex justify-between items-center w-full">
         <div className="flex items-center justify-start gap-4">
-          <RiseLogo />
+          <RiseLogo preferredLogoTheme="dark" />
           {navItems.map((item) => {
             return (
               <Button
