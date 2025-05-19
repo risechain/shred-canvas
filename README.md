@@ -22,15 +22,22 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
+To easily set this base repo, you may use the following:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+# to setup a complete repo, including wagmi + theme (css tokens) + common components
+npx create-rise-fe-app
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# to setup a theme-only repo (CSS Tokens)
+npx dcreate-rise-fe-app theme
 
-## Deploy on Vercel
+# to setup a basic repo with theme + common components
+npx create-rise-fe-app base
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# to setup a repo with theme + wagmi + tanstack configuration
+npx create-rise-fe-app wagmi
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# to setup a complete repo with sample demo
+npx create-rise-fe-app demo
+
+```
