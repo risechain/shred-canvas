@@ -18,7 +18,7 @@
   --color-accent: var(--gray-4);
   --color-accent-foreground: var(--gray-contrast);
 
-  --color-primary: var(--purple-9);
+  --color-primary: var(--purple-10);
   --color-primary-foreground: var(--purple-contrast);
 
   --color-secondary: var(--pink-8);
@@ -46,6 +46,10 @@
 
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+
+  --color-input-accent: var(--purple-11);
+  --color-input-primary: var(--gray-12);
+  --color-input-secondary: var(--gray-7);
 
   --color-button-bg-primary: var(--purple-10);
   --color-button-bg-accent: var(--purple-8);
@@ -215,19 +219,10 @@
     color: var(--foreground) !important;
   }
 
-  @media only screen and (min-width: 768px) {
-    .cf-turnstile > div {
-      height: 64px;
-      margin: -1px;
-      border-radius: 16px;
-      border: none;
-    }
-  }
-
-  @media only screen and (max-width: 768px) {
-    .cf-turnstile > div {
-      height: 64px;
-      width: 100%;
-    }
+  .cf-turnstile > div {
+    height: 64px;
+    margin: -1px;
+    border-radius: 16px;
+    border: none;
   }
 }
