@@ -29,7 +29,7 @@ To easily set this base repo, you may use the following:
 npx create-rise-fe-app
 
 # to setup a theme-only repo (CSS Tokens)
-npx dcreate-rise-fe-app theme
+npx create-rise-fe-app theme
 
 # to setup a basic repo with theme + common components
 npx create-rise-fe-app base
