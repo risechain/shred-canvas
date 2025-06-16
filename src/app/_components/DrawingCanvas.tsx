@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useRef, useState } from "react";
 import { useReadContract } from "wagmi";
 import canvasAbi from "../../../abi/canvasAbi.json";

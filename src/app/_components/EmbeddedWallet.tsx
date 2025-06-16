@@ -1,13 +1,8 @@
-import { Button, Card, Separator } from "@/components/ui";
+import { Button, Card } from "@/components/ui";
 import { useWallet } from "@/hooks/contract/useWallet";
 import { getMaskedAddress } from "@/lib/utils";
 import Link from "next/link";
-import { useState } from "react";
 import { useTransactionCount } from "wagmi";
-
-type WalletData = {
-  nonce?: number;
-};
 
 export function EmbeddedWalletContent() {
   const { setIsResetting, resetWalletClient, wallet } = useWallet();
