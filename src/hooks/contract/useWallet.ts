@@ -9,18 +9,24 @@ export function useWallet() {
   const [isResetting, setIsResetting] = useState<boolean>(false);
 
   function getStoredWallet() {
-    const stored = localStorage.getItem(WALLET_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : null;
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(WALLET_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : null;
+    } else {
+      return null;
+    }
   }
 
   function setStoredWallet(address: string, privateKey: string) {
-    localStorage.setItem(
-      WALLET_STORAGE_KEY,
-      JSON.stringify({
-        address,
-        privateKey,
-      })
-    );
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        WALLET_STORAGE_KEY,
+        JSON.stringify({
+          address,
+          privateKey,
+        })
+      );
+    }
   }
 
   function generateWalletClient(privateKey: `0x${string}` | Account) {
