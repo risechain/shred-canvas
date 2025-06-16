@@ -13,15 +13,7 @@ export type Navigation = NavigationItem & {
 };
 
 export function useNavigation() {
-  const navItems: Navigation[] = [
-    {
-      id: "home",
-      label: "Demo",
-      path: "/",
-      isDisabled: false,
-      icon: "/icons/buttons/home.svg",
-    },
-  ];
+  const navItems: Navigation[] = [];
 
   const toolbarItems: Navigation[] = [
     {

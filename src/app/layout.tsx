@@ -10,6 +10,7 @@ import localFont from "next/font/local";
 import "@fontsource/inter-tight";
 import "@fontsource/space-grotesk";
 import "@styles/globals.css";
+import { NavigationBar } from "@/components/NavigationBar";
 
 const fkDisplay = localFont({
   src: "../fonts/FKDisplay-RegularAlt.woff",
@@ -55,7 +56,10 @@ export default function RootLayout({
           <Modal />
           <ToastContainer theme="colored" icon={false} />
           <main className="mx-auto max-w-10xl w-full h-auto relative min-h-vh">
-            {children}
+            <div className="bg-background p-3 rounded-md1 h-full rounded-md">
+              <NavigationBar />
+              {children}
+            </div>
           </main>
         </AppProvider>
       </body>

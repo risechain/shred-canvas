@@ -2,7 +2,7 @@
 import { useModal } from "@/hooks/useModal";
 import { Connector, useAccount, useConnect, useSwitchChain } from "wagmi";
 import { Button, Card } from "./ui";
-import { sepoliaTestnet } from "@/chain/sepolia";
+import { sepoliaTestnet } from "@/chain/riseTestnet";
 import { toast } from "react-toastify";
 import { ToastMessage } from "./ToastMessage";
 
