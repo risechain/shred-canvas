@@ -2,7 +2,7 @@
 import { useModal } from "@/hooks/useModal";
 import { Connector, useAccount, useConnect, useSwitchChain } from "wagmi";
 import { Button, Card } from "./ui";
-import { sepoliaTestnet } from "@/chain/riseTestnet";
+import { riseTestnet } from "@/chain/riseTestnet";
 import { toast } from "react-toastify";
 import { ToastMessage } from "./ToastMessage";
 
@@ -25,7 +25,7 @@ export function Wallet() {
       await connectAsync({ connector });
     }
 
-    switchChain({ chainId: sepoliaTestnet.id }); // will automatically add new chain
+    switchChain({ chainId: riseTestnet.id }); // will automatically add new chain
     hideModal();
 
     // TODO: Wrap in success condition
