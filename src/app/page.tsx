@@ -1,10 +1,10 @@
 "use client";
 
-import { Card, Separator } from "@/components/ui";
+import { Separator } from "@/components/ui";
+import { BrushSettings } from "./_components/BrushSettings";
 import { DrawingCanvas } from "./_components/DrawingCanvas";
 import { EmbeddedWalletContent } from "./_components/EmbeddedWallet";
-import { cn } from "@/lib/utils";
-import { BrushSettings } from "./_components/BrushSettings";
+import { BrushPreview } from "./_components/BrushPreview";
 
 export default function Home() {
   return (
@@ -12,33 +12,15 @@ export default function Home() {
       <div className="flex-[0_0_20%] flex flex-col min-w-2xs gap-5 p-3 border border-accent h-full rounded bg-card">
         <p className="text-xl md:text-3xl font-medium">Paint Canvas</p>
         <Separator />
-        <div>
-          <p className="text-md md:text-lg text-text-accent">Embedded Wallet</p>
-          <EmbeddedWalletContent />
-        </div>
+        <EmbeddedWalletContent />
       </div>
 
-      <div
-        className={cn(
-          "flex-1 h-full w-full min-w-2xs bg-accent/50"
-          // "relative before:absolute before:inset-0 before:bg-[linear-gradient(to_right,var(--gray-6)_1px,transparent_1px),linear-gradient(to_bottom,var(--gray-6)_1px,transparent_1px)] before:bg-[size:20px_20px]"
-        )}
-      >
-        <DrawingCanvas />
-      </div>
+      <DrawingCanvas />
 
       <div className="flex-[0_0_20%] flex flex-col min-w-2xs gap-5 p-3 border border-accent h-full rounded bg-card">
-        <div>
-          <p className="text-md md:text-lg text-text-accent">Brush Settings</p>
-          <BrushSettings />
-        </div>
+        <BrushSettings />
         <Separator />
-        <div>
-          <p className="text-md md:text-lg text-text-accent">Brush Preview</p>
-          <Card variant="secondary" className="gap-5 md:p-4 rounded mt-5">
-            TODO: Brush Preview
-          </Card>
-        </div>
+        <BrushPreview />
       </div>
     </div>
   );

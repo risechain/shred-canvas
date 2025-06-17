@@ -3,6 +3,7 @@ import { usePage } from "@/hooks/usePage";
 import { useEffect, useRef, useState } from "react";
 import { useReadContract } from "wagmi";
 import canvasAbi from "../../../abi/canvasAbi.json";
+import { cn } from "@/lib/utils";
 
 type TransactionQueue = {
   x: number;
@@ -20,7 +21,6 @@ const CONTRACT_ADDRESS = "0xf7d0a6C2c2f653e762DEc942Fc727f10d103cB87";
 
 export function DrawingCanvas() {
   const canvasSize = 64;
-  const brushSize = 5;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -32,7 +32,7 @@ export function DrawingCanvas() {
   const [txQueue, setTxQueue] = useState<TransactionQueue[]>([]);
   const [sentTransactions, setSentTransactions] = useState<Transaction[]>([]);
 
-  const { brushColor } = usePage();
+  const { brushColor, brushSize } = usePage();
 
   const tiles = useReadContract({
     abi: canvasAbi,
@@ -272,19 +272,26 @@ export function DrawingCanvas() {
   }, [tiles.data, txQueue, sentTransactions]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      onMouseDown={startDrawing}
-      onMouseMove={draw}
-      onMouseUp={stopDrawing}
-      onMouseLeave={stopDrawing}
-      onTouchStart={touchStart}
-      onTouchMove={touchMove}
-      onTouchEnd={stopDrawing}
-      className="cursor-crosshair touch-none w-fit h-full mx-auto relative z-10"
-      style={{
-        imageRendering: "pixelated",
-      }}
-    />
+    <div
+      className={cn(
+        "flex-1 h-full w-full min-w-2xs bg-accent/50"
+        // "relative before:absolute before:inset-0 before:bg-[linear-gradient(to_right,var(--gray-6)_1px,transparent_1px),linear-gradient(to_bottom,var(--gray-6)_1px,transparent_1px)] before:bg-[size:20px_20px]"
+      )}
+    >
+      <canvas
+        ref={canvasRef}
+        onMouseDown={startDrawing}
+        onMouseMove={draw}
+        onMouseUp={stopDrawing}
+        onMouseLeave={stopDrawing}
+        onTouchStart={touchStart}
+        onTouchMove={touchMove}
+        onTouchEnd={stopDrawing}
+        className="cursor-crosshair touch-none w-fit h-full mx-auto relative z-10"
+        style={{
+          imageRendering: "pixelated",
+        }}
+      />
+    </div>
   );
 }
