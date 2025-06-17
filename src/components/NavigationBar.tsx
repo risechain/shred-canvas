@@ -1,15 +1,13 @@
 "use client";
 
-import { Button, Separator } from "@/components/ui";
-import { MoonIcon, SettingsIcon, SunIcon, WalletIcon } from "lucide-react";
-import { RiseLogo } from "./RiseLogo";
-import { useTheme } from "next-themes";
-import { useNavigation } from "@/hooks/useNavigation";
-import Link from "next/link";
-import { useModal } from "@/hooks/useModal";
-import { EmbeddedWalletContent } from "@/app/_components/EmbeddedWallet";
 import { BrushPreview } from "@/app/_components/BrushPreview";
 import { BrushSettings } from "@/app/_components/BrushSettings";
+import { EmbeddedWalletContent } from "@/app/_components/EmbeddedWallet";
+import { Button, Separator } from "@/components/ui";
+import { useModal } from "@/hooks/useModal";
+import { MoonIcon, SettingsIcon, SunIcon, WalletIcon } from "lucide-react";
+import { useTheme } from "next-themes";
+import { RiseLogo } from "./RiseLogo";
 
 export function NavigationBar() {
   const { theme, setTheme } = useTheme();

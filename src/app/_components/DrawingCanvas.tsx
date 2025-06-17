@@ -287,7 +287,7 @@ export function DrawingCanvas() {
         onTouchStart={touchStart}
         onTouchMove={touchMove}
         onTouchEnd={stopDrawing}
-        className="cursor-crosshair touch-none w-full aspect-square max-w-[860px]"
+        className="cursor-crosshair touch-none w-full aspect-square max-w-[820px]"
         style={{
           imageRendering: "pixelated",
         }}

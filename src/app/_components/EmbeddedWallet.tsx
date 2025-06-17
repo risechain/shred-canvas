@@ -1,4 +1,4 @@
-import { Button, Card } from "@/components/ui";
+import { Button } from "@/components/ui";
 import { useWallet } from "@/hooks/contract/useWallet";
 import { getMaskedAddress } from "@/lib/utils";
 import Link from "next/link";
