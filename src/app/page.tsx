@@ -24,7 +24,7 @@ export function EmbeddedWallet() {
       className="p-5 pl-1 flex flex-col gap-4"
       defaultSize={20}
       minSize={10}
-      maxSize={25}
+      maxSize={30}
     >
       <p className="text-xl md:text-3xl font-medium">Paint Canvas</p>
       <Separator />
@@ -45,7 +45,7 @@ export function Settings() {
       className="p-5 pr-1 flex flex-col gap-4"
       defaultSize={15}
       minSize={10}
-      maxSize={20}
+      maxSize={25}
     >
       <BrushSettings />
       <Separator />
