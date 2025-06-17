@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { usePage } from "@/hooks/usePage";
 import { useEffect, useRef, useState } from "react";
 import { useReadContract } from "wagmi";
 import canvasAbi from "../../../abi/canvasAbi.json";
@@ -19,6 +20,7 @@ const CONTRACT_ADDRESS = "0xf7d0a6C2c2f653e762DEc942Fc727f10d103cB87";
 
 export function DrawingCanvas() {
   const canvasSize = 64;
+  const brushSize = 5;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -30,9 +32,7 @@ export function DrawingCanvas() {
   const [txQueue, setTxQueue] = useState<TransactionQueue[]>([]);
   const [sentTransactions, setSentTransactions] = useState<Transaction[]>([]);
 
-  // State for brush properties
-  const [brushColor, setBrushColor] = useState("#000000");
-  const [brushSize, setBrushSize] = useState(5);
+  const { brushColor } = usePage();
 
   const tiles = useReadContract({
     abi: canvasAbi,
@@ -281,10 +281,9 @@ export function DrawingCanvas() {
       onTouchStart={touchStart}
       onTouchMove={touchMove}
       onTouchEnd={stopDrawing}
-      className="cursor-crosshair touch-none w-fit h-full mx-auto"
+      className="cursor-crosshair touch-none w-fit h-full mx-auto relative z-10"
       style={{
         imageRendering: "pixelated",
-        backgroundColor: "lightblue",
       }}
     />
   );

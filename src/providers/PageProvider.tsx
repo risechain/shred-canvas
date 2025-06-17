@@ -12,6 +12,9 @@ export type PageContextType = {
 
   setView: (view: View) => void;
   setIsProjectsLoading: (value: boolean) => void;
+
+  brushColor: string;
+  setBrushColor: (value: string) => void;
 };
 
 const initialState: PageContextType = {
@@ -20,6 +23,9 @@ const initialState: PageContextType = {
 
   setView: () => {},
   setIsProjectsLoading: () => {},
+
+  brushColor: "#000000",
+  setBrushColor: () => {},
 };
 
 export const PageContext = createContext<PageContextType>(initialState);
@@ -29,6 +35,7 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [view, setView] = useState<View>("grid");
   const [isProjectsLoading, setIsProjectsLoading] = useState<boolean>(true);
+  const [brushColor, setBrushColor] = useState("#000000");
 
   const providerValue = useMemo(() => {
     return {
@@ -37,8 +44,11 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
 
       setView,
       setIsProjectsLoading,
+
+      brushColor,
+      setBrushColor,
     };
-  }, [view, isProjectsLoading]);
+  }, [view, isProjectsLoading, brushColor]);
 
   return (
     <PageContext.Provider value={providerValue}>
