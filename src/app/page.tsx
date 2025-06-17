@@ -9,7 +9,7 @@ import { BrushPreview } from "./_components/BrushPreview";
 export default function Home() {
   return (
     <div className="flex flex-wrap items-center justify-center gap-3 py-3 h-full max-h-[calc(100vh_-_90px)]">
-      <div className="flex-[0_0_20%] flex flex-col min-w-2xs gap-5 p-3 border border-accent h-full rounded bg-card">
+      <div className="flex-[0_0_20%] flex flex-col min-w-2xs gap-5 p-3 border border-accent h-full rounded bg-card max-lg:hidden">
         <p className="text-xl md:text-3xl font-medium">Paint Canvas</p>
         <Separator />
         <EmbeddedWalletContent />
@@ -17,7 +17,7 @@ export default function Home() {
 
       <DrawingCanvas />
 
-      <div className="flex-[0_0_20%] flex flex-col min-w-2xs gap-5 p-3 border border-accent h-full rounded bg-card">
+      <div className="flex-[0_0_20%] flex flex-col min-w-2xs gap-5 p-3 border border-accent h-full rounded bg-card max-lg:hidden">
         <BrushSettings />
         <Separator />
         <BrushPreview />

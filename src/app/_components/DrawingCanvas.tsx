@@ -274,7 +274,7 @@ export function DrawingCanvas() {
   return (
     <div
       className={cn(
-        "flex-1 h-full w-full min-w-2xs bg-accent/50"
+        "flex-1 h-full w-full bg-foreground/75 dark:bg-accent/35"
         // "relative before:absolute before:inset-0 before:bg-[linear-gradient(to_right,var(--gray-6)_1px,transparent_1px),linear-gradient(to_bottom,var(--gray-6)_1px,transparent_1px)] before:bg-[size:20px_20px]"
       )}
     >
@@ -287,7 +287,7 @@ export function DrawingCanvas() {
         onTouchStart={touchStart}
         onTouchMove={touchMove}
         onTouchEnd={stopDrawing}
-        className="cursor-crosshair touch-none w-fit h-full mx-auto relative z-10"
+        className="cursor-crosshair touch-none h-full mx-auto relative z-10"
         style={{
           imageRendering: "pixelated",
         }}
