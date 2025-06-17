@@ -9,7 +9,7 @@ export function BrushPreview() {
       <p className="text-md md:text-lg text-text-accent">Brush Preview</p>
       <Card variant="secondary" className="gap-5 md:p-4 rounded mt-5">
         <div
-          className="rounded-full shadow-lg w-10 h-10"
+          className="rounded shadow-lg w-full h-10 border border-border-secondary"
           style={{
             backgroundColor: brushColor,
           }}

@@ -1,27 +1,72 @@
 "use client";
 
 import { Separator } from "@/components/ui";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import { useIsMobile } from "@/hooks/useMobile";
+import { BrushPreview } from "./_components/BrushPreview";
 import { BrushSettings } from "./_components/BrushSettings";
 import { DrawingCanvas } from "./_components/DrawingCanvas";
 import { EmbeddedWalletContent } from "./_components/EmbeddedWallet";
-import { BrushPreview } from "./_components/BrushPreview";
+
+export function EmbeddedWallet() {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return null;
+  }
+
+  return (
+    <ResizablePanel
+      className="p-5 pl-1 flex flex-col gap-4"
+      defaultSize={20}
+      minSize={10}
+      maxSize={25}
+    >
+      <p className="text-xl md:text-3xl font-medium">Paint Canvas</p>
+      <Separator />
+      <EmbeddedWalletContent />
+    </ResizablePanel>
+  );
+}
+
+export function Settings() {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return null;
+  }
+
+  return (
+    <ResizablePanel
+      className="p-5 pr-1 flex flex-col gap-4"
+      defaultSize={15}
+      minSize={10}
+      maxSize={20}
+    >
+      <BrushSettings />
+      <Separator />
+      <BrushPreview />
+    </ResizablePanel>
+  );
+}
 
 export default function Home() {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-3 py-3 h-full max-h-[calc(100vh_-_90px)]">
-      <div className="flex-[0_0_20%] flex flex-col min-w-2xs gap-5 p-3 border border-accent h-full rounded bg-card max-lg:hidden">
-        <p className="text-xl md:text-3xl font-medium">Paint Canvas</p>
-        <Separator />
-        <EmbeddedWalletContent />
-      </div>
-
-      <DrawingCanvas />
-
-      <div className="flex-[0_0_20%] flex flex-col min-w-2xs gap-5 p-3 border border-accent h-full rounded bg-card max-lg:hidden">
-        <BrushSettings />
-        <Separator />
-        <BrushPreview />
-      </div>
-    </div>
+    <ResizablePanelGroup
+      direction="horizontal"
+      className="flex h-full max-h-[calc(100vh_-_90px)] py-2"
+    >
+      <EmbeddedWallet />
+      <ResizableHandle withHandle className="bg-accent max-md:hidden" />
+      <ResizablePanel defaultSize={60}>
+        <DrawingCanvas />
+      </ResizablePanel>
+      <ResizableHandle withHandle className="bg-accent max-md:hidden" />
+      <Settings />
+    </ResizablePanelGroup>
   );
 }

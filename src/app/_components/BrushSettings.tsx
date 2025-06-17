@@ -32,12 +32,12 @@ export function BrushSettings() {
         {/* Color picker */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-white mb-2 text-center">
-            Color{" "}
+            Color Picker{" "}
             <input
               type="color"
               value={brushColor}
               onChange={(e) => setBrushColor(e.target.value)}
-              className="block w-full h-12 mt-2 rounded cursor-pointer"
+              className="w-full h-12 mt-2 rounded cursor-pointer"
             />
           </label>
         </div>
