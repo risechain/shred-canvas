@@ -7,16 +7,29 @@ import {
 import { useWallet } from "@/hooks/contract/useWallet";
 import { usePage } from "@/hooks/usePage";
 import { getMaskedAddress } from "@/lib/utils";
+import { CopyIcon } from "lucide-react";
 import Link from "next/link";
-import { useTransactionCount } from "wagmi";
+import { useBalance, useTransactionCount } from "wagmi";
 
 export function EmbeddedWalletContent() {
   const { setIsResetting, resetWalletClient, wallet } = useWallet();
   const { processingType, setProcessingType } = usePage();
 
-  // Fix this
+  const balance = useBalance({
+    address: wallet.account.address,
+  });
+
   const transaction = useTransactionCount({ address: wallet.account.address });
-  console.log("transaction:: ", transaction);
+  console.log("balance:: ", balance);
+
+  async function handleCopy(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to copy!");
+    }
+  }
 
   return (
     <div>
@@ -28,9 +41,29 @@ export function EmbeddedWalletContent() {
 
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm md:text-md text-text-secondary">Address:</p>
-          <p className="text-sm md:text-md">
-            {getMaskedAddress(wallet.account.address)}
-          </p>
+          <div className="flex gap-1 items-center">
+            <p className="text-sm md:text-md">
+              {getMaskedAddress(wallet.account.address)}
+            </p>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                handleCopy(wallet.account.address);
+              }}
+            >
+              <CopyIcon size={12} />
+            </Button>
+          </div>
+        </div>
+
+        <Separator />
+
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm md:text-md text-text-secondary">Balance:</p>
+          <div className="flex gap-1 items-center">
+            <p className="text-sm md:text-md">{balance.data?.value ?? 0}</p>
+            <p className="text-sm md:text-md">{balance.data?.symbol}</p>
+          </div>
         </div>
 
         <Separator />

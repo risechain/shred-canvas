@@ -224,6 +224,7 @@ export function DrawingCanvas() {
     context.fillRect(0, 0, canvas.width, canvas.height);
 
     contextRef.current = context;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Update context when brush properties change

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Account, createWalletClient, http } from "viem";
-import { generatePrivateKey } from "viem/accounts";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { riseTestnet } from "viem/chains";
 
 const WALLET_STORAGE_KEY = "paint_canvas_wallet";
@@ -29,9 +29,9 @@ export function useWallet() {
     }
   }
 
-  function generateWalletClient(privateKey: `0x${string}` | Account) {
+  function generateWalletClient(address: `0x${string}` | Account) {
     const walletClient = createWalletClient({
-      account: privateKey,
+      account: address,
       chain: riseTestnet,
       transport: http(),
     });
@@ -41,11 +41,10 @@ export function useWallet() {
 
   function resetWalletClient() {
     const privateKey = generatePrivateKey();
-    const walletClient = generateWalletClient(privateKey);
+    const account = privateKeyToAccount(privateKey);
 
-    setStoredWallet(walletClient.account.address, privateKey);
-
-    return walletClient;
+    setStoredWallet(account.address, privateKey);
+    return generateWalletClient(privateKey);
   }
 
   const wallet = useMemo(() => {
@@ -55,7 +54,7 @@ export function useWallet() {
 
     const storedWallet = getStoredWallet();
     if (storedWallet) {
-      return generateWalletClient(storedWallet.privateKey as `0x${string}`);
+      return generateWalletClient(storedWallet.address as `0x${string}`);
     } else {
       return resetWalletClient();
     }
