@@ -27,6 +27,9 @@ export type PageContextType = {
 
   brushSize: number;
   setBrushSize: (props: number) => void;
+
+  processingType: "batch" | "individual";
+  setProcessingType: (props: "batch" | "individual") => void;
 };
 
 const initialState: PageContextType = {
@@ -44,6 +47,9 @@ const initialState: PageContextType = {
 
   brushSize: 5,
   setBrushSize: () => {},
+
+  processingType: "batch",
+  setProcessingType: () => {},
 };
 
 export const PageContext = createContext<PageContextType>(initialState);
@@ -53,6 +59,11 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [view, setView] = useState<View>("grid");
   const [isProjectsLoading, setIsProjectsLoading] = useState<boolean>(true);
+
+  const [processingType, setProcessingType] = useState<"batch" | "individual">(
+    "batch"
+  );
+
   const [brushColor, setBrushColor] = useState("#1856bf");
   const [brushSize, setBrushSize] = useState(5);
   const [rgbValues, setRgbValues] = useState<RgbValues>({
@@ -77,8 +88,18 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
 
       brushSize,
       setBrushSize,
+
+      processingType,
+      setProcessingType,
     };
-  }, [view, isProjectsLoading, brushColor, rgbValues, brushSize]);
+  }, [
+    view,
+    isProjectsLoading,
+    brushColor,
+    rgbValues,
+    brushSize,
+    processingType,
+  ]);
 
   return (
     <PageContext.Provider value={providerValue}>

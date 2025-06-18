@@ -30,7 +30,7 @@ export function DrawingCanvas() {
   const [txQueue, setTxQueue] = useState<TransactionQueue[]>([]);
   const [sentTransactions, setSentTransactions] = useState<Transaction[]>([]);
 
-  const { brushColor, brushSize, rgbValues } = usePage();
+  const { brushColor, brushSize, rgbValues, processingType } = usePage();
 
   const tiles = useReadContract({
     abi: canvasAbi,
