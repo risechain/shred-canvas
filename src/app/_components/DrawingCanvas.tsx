@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { usePage } from "@/hooks/usePage";
+import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import { useReadContract } from "wagmi";
 import canvasAbi from "../../../abi/canvasAbi.json";
-import { cn } from "@/lib/utils";
 
 type TransactionQueue = {
   x: number;
@@ -26,13 +26,11 @@ export function DrawingCanvas() {
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
 
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
-  const [rgbValues, setRgbValues] = useState({ r: 0, g: 0, b: 0 });
-
   const [isProcessingQueue, setIsProcessingQueue] = useState<boolean>(false);
   const [txQueue, setTxQueue] = useState<TransactionQueue[]>([]);
   const [sentTransactions, setSentTransactions] = useState<Transaction[]>([]);
 
-  const { brushColor, brushSize } = usePage();
+  const { brushColor, brushSize, rgbValues } = usePage();
 
   const tiles = useReadContract({
     abi: canvasAbi,
@@ -226,7 +224,6 @@ export function DrawingCanvas() {
     context.fillRect(0, 0, canvas.width, canvas.height);
 
     contextRef.current = context;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Update context when brush properties change
@@ -253,18 +250,6 @@ export function DrawingCanvas() {
     return () => clearInterval(cleanupInterval);
   }, [sentTransactions]);
 
-  // Convert hex color to RGB
-  useEffect(() => {
-    const hexToRgb = (hex: string) => {
-      const r = parseInt(hex.slice(1, 3), 16);
-      const g = parseInt(hex.slice(3, 5), 16);
-      const b = parseInt(hex.slice(5, 7), 16);
-      return { r, g, b };
-    };
-
-    setRgbValues(hexToRgb(brushColor));
-  }, [brushColor]);
-
   // Effect to render canvas whenever any of the layers change
   useEffect(() => {
     renderCanvas();
@@ -275,7 +260,6 @@ export function DrawingCanvas() {
     <div
       className={cn(
         "flex-1 flex items-center justify-center h-full w-full bg-foreground/75 dark:bg-accent/35"
-        // "relative before:absolute before:inset-0 before:bg-[linear-gradient(to_right,var(--gray-6)_1px,transparent_1px),linear-gradient(to_bottom,var(--gray-6)_1px,transparent_1px)] before:bg-[size:20px_20px]"
       )}
     >
       <canvas

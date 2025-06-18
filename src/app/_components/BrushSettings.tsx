@@ -1,8 +1,17 @@
-import { Card } from "@/components/ui";
+import { Separator } from "@/components/ui";
 import { usePage } from "@/hooks/usePage";
+import { HexColorInput, HexColorPicker } from "react-colorful";
 
 export function BrushSettings() {
-  const { brushColor, setBrushColor, rgbValues, setRgbValues } = usePage();
+  const { brushColor, setBrushColor, rgbValues, setRgbValues, brushSize } =
+    usePage();
+
+  function convertHexToRgb(hex: string) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    setRgbValues({ r, g, b });
+  }
 
   // Handle RGB input changes
   function handleRgbChange(color: string, value: number) {
@@ -25,76 +34,97 @@ export function BrushSettings() {
     setBrushColor(rgbToHex(newRgb.r, newRgb.g, newRgb.b));
   }
 
+  function handleHexChange(hex: string) {
+    setBrushColor(hex);
+
+    // convert hex to rgb
+    convertHexToRgb(hex);
+  }
+
   return (
-    <div>
+    <div className="flex flex-col gap-6">
       <p className="text-md md:text-lg text-text-accent">Brush Settings</p>
-      <Card variant="secondary" className="gap-5 md:p-4 rounded mt-5">
-        {/* Color picker */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-white mb-2 text-center">
-            Color Picker{" "}
-            <input
-              type="color"
-              value={brushColor}
-              onChange={(e) => setBrushColor(e.target.value)}
-              className="w-full h-12 mt-2 rounded cursor-pointer"
-            />
-          </label>
-        </div>
-        {/* RGB sliders */}
-        <div className="mb-8 space-y-4">
-          <h3 className="text-sm font-medium text-gray-300 mb-3">
-            RGB Values:
-          </h3>
-
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-red-400 w-6">R</span>
-              <input
-                type="range"
-                min="0"
-                max="255"
-                value={rgbValues.r}
-                onChange={(e) => handleRgbChange("r", parseInt(e.target.value))}
-                className="flex-1 accent-red-500"
-              />
-              <span className="text-sm text-gray-300 w-8 text-right">
-                {rgbValues.r}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-green-400 w-6">G</span>
-              <input
-                type="range"
-                min="0"
-                max="255"
-                value={rgbValues.g}
-                onChange={(e) => handleRgbChange("g", parseInt(e.target.value))}
-                className="flex-1 accent-green-500"
-              />
-              <span className="text-sm text-gray-300 w-8 text-right">
-                {rgbValues.g}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-blue-400 w-6">B</span>
-              <input
-                type="range"
-                min="0"
-                max="255"
-                value={rgbValues.b}
-                onChange={(e) => handleRgbChange("b", parseInt(e.target.value))}
-                className="flex-1 accent-blue-500"
-              />
-              <span className="text-sm text-gray-300 w-8 text-right">
-                {rgbValues.b}
-              </span>
-            </div>
+      <div className="flex flex-wrap gap-3 items-center">
+        <div
+          className="w-16 h-16 rounded-sm"
+          style={{ backgroundColor: brushColor }}
+        />
+        <div className="">
+          <div className="flex gap-2">
+            <p className="text-sm md:text-md text-text-accent">Size:</p>
+            <p className="text-sm md:text-md">{brushSize}px</p>
+          </div>
+          <div className="flex gap-2">
+            <p className="text-sm md:text-md text-text-accent">HEX:</p>
+            <p className="text-sm md:text-md">{brushColor}</p>
+          </div>
+          <div className="flex gap-2">
+            <p className="text-sm md:text-md text-text-accent">RGB:</p>
+            <p className="text-sm md:text-md">
+              {rgbValues.r}, {rgbValues.g}, {rgbValues.b}
+            </p>
           </div>
         </div>
-      </Card>
+      </div>
+
+      <Separator />
+
+      <HexColorPicker
+        color={brushColor}
+        onChange={handleHexChange}
+        style={{ width: "100%", height: "280px" }}
+      />
+      <HexColorInput
+        prefixed
+        color={brushColor}
+        onChange={handleHexChange}
+        className="py-2 px-4 bg-accent rounded-md"
+      />
+
+      <Separator />
+
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm text-red-400 w-3">R</span>
+          <input
+            type="range"
+            min="0"
+            max="255"
+            value={rgbValues.r}
+            onChange={(e) => handleRgbChange("r", parseInt(e.target.value))}
+            className="flex-1 min-w-0 accent-red-500"
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm text-green-400 w-3">G</span>
+          <input
+            type="range"
+            min="0"
+            max="255"
+            value={rgbValues.g}
+            onChange={(e) => handleRgbChange("g", parseInt(e.target.value))}
+            className="flex-1 min-w-0 accent-green-700"
+          />
+        </div>
+
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-blue-400 w-3">B</span>
+          <input
+            type="range"
+            min="0"
+            max="255"
+            value={rgbValues.b}
+            onChange={(e) => handleRgbChange("b", parseInt(e.target.value))}
+            className="flex-1 min-w-0 accent-blue-500"
+          />
+        </div>
+        <input
+          value={`RGB (${rgbValues.r}, ${rgbValues.g}, ${rgbValues.b})`}
+          readOnly // TODO:fix this
+          className="py-2 px-4 bg-accent rounded-md w-full mt-2"
+        />
+      </div>
     </div>
   );
 }

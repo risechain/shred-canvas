@@ -32,11 +32,13 @@ export function GenericModal(props: Readonly<DialogProps>) {
     disableClose,
     hiddenClose,
     children,
+    isSheet,
+    side = "bottom",
   } = props;
 
   const isMobile = useIsMobile();
 
-  if (isMobile) {
+  if (isMobile || isSheet) {
     return (
       <Sheet
         open={isOpen}
@@ -50,10 +52,10 @@ export function GenericModal(props: Readonly<DialogProps>) {
           {...contentProps}
           data-mobile="true"
           className={cn(
-            "bg-sidebar text-sidebar-foreground p-4 [&>button]:hidden",
+            "bg-accent text-sidebar-foreground p-4 [&>button]:hidden overflow-auto",
             contentProps?.className
           )}
-          side="bottom"
+          side={side}
           disableClose={disableClose || hiddenClose}
         >
           <SheetHeader className="py-0 px-2">

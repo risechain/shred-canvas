@@ -53,9 +53,13 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [view, setView] = useState<View>("grid");
   const [isProjectsLoading, setIsProjectsLoading] = useState<boolean>(true);
-  const [brushColor, setBrushColor] = useState("#000000");
+  const [brushColor, setBrushColor] = useState("#1856bf");
   const [brushSize, setBrushSize] = useState(5);
-  const [rgbValues, setRgbValues] = useState<RgbValues>({ r: 0, g: 0, b: 0 });
+  const [rgbValues, setRgbValues] = useState<RgbValues>({
+    r: 24,
+    g: 86,
+    b: 181,
+  });
 
   const providerValue = useMemo(() => {
     return {

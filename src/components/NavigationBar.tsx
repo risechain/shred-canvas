@@ -1,9 +1,9 @@
 "use client";
 
-import { BrushPreview } from "@/app/_components/BrushPreview";
 import { BrushSettings } from "@/app/_components/BrushSettings";
 import { EmbeddedWalletContent } from "@/app/_components/EmbeddedWallet";
 import { Button, Separator } from "@/components/ui";
+import { useIsMobile } from "@/hooks/useMobile";
 import { useModal } from "@/hooks/useModal";
 import { MoonIcon, SettingsIcon, SunIcon, WalletIcon } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -12,9 +12,10 @@ import { RiseLogo } from "./RiseLogo";
 export function NavigationBar() {
   const { theme, setTheme } = useTheme();
   const { showModal } = useModal();
+  const isMobile = useIsMobile();
 
   return (
-    <div className="flex items-center justify-center rounded-sm  w-full pt-2 pb-2.5 px-4 bg-primary">
+    <div className="flex items-center justify-center rounded-t-sm w-full pt-2 pb-2.5 px-4 bg-primary">
       <div className="flex justify-between items-center w-full">
         <div className="flex items-center justify-start gap-4">
           <RiseLogo preferredLogoTheme="dark" />
@@ -22,17 +23,20 @@ export function NavigationBar() {
         <div className="flex items-center justify-start gap-1">
           <Button
             variant="secondary"
-            className="md:hidden"
+            className="xl:hidden"
             onClick={() => {
               showModal({
+                isSheet: true,
+                side: isMobile ? "bottom" : "left",
+                contentProps: { className: "bg-sidebar max-md:max-h-[85vh]" },
                 content: (
-                  <>
+                  <div className="flex flex-col gap-4">
                     <p className="text-xl md:text-3xl font-medium">
                       Paint Canvas
                     </p>
                     <Separator />
                     <EmbeddedWalletContent />
-                  </>
+                  </div>
                 ),
               });
             }}
@@ -41,16 +45,13 @@ export function NavigationBar() {
           </Button>
           <Button
             variant="secondary"
-            className="md:hidden"
+            className="lg:hidden"
             onClick={() => {
               showModal({
-                content: (
-                  <>
-                    <BrushSettings />
-                    <Separator />
-                    <BrushPreview />
-                  </>
-                ),
+                isSheet: true,
+                contentProps: { className: "max-md:max-h-[85vh]" },
+                side: isMobile ? "bottom" : "left",
+                content: <BrushSettings />,
               });
             }}
           >

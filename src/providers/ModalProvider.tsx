@@ -9,6 +9,8 @@ export type ModalProps = {
   contentProps?: DialogContentProps & React.RefAttributes<HTMLDivElement>;
   disableClose?: boolean;
   hiddenClose?: boolean;
+  isSheet?: boolean;
+  side?: "bottom" | "left" | "right";
 };
 
 export type ModalContextType = ModalProps & {
