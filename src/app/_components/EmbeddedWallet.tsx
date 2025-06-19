@@ -14,14 +14,14 @@ import { useBalance, useTransactionCount } from "wagmi";
 
 export function EmbeddedWalletContent() {
   const { setIsResetting, resetWalletClient, wallet } = useWallet();
-  const { processingType, setProcessingType } = usePage();
+  const { processingType, setProcessingType, pendingTx, completedTx } =
+    usePage();
 
   const balance = useBalance({
     address: wallet.account.address,
   });
 
   const transaction = useTransactionCount({ address: wallet.account.address });
-  console.log("balance:: ", balance);
 
   async function handleCopy(text: string) {
     try {
@@ -88,16 +88,16 @@ export function EmbeddedWalletContent() {
           <p className="text-sm md:text-md text-text-secondary">
             Pending Transactions:
           </p>
-          <p className="text-sm md:text-md">0</p>
+          <p className="text-sm md:text-md">{pendingTx}</p>
         </div>
 
         <Separator />
 
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm md:text-md text-text-secondary">
-            Sent Transactions:
+            Completed Transactions:
           </p>
-          <p className="text-sm md:text-md">0</p>
+          <p className="text-sm md:text-md">{completedTx}</p>
         </div>
 
         <Separator />

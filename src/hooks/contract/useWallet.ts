@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { createPublicShredClient, shredsWebSocket } from "shreds/viem";
 import { Account, createWalletClient, http } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { riseTestnet } from "viem/chains";
@@ -61,7 +62,13 @@ export function useWallet() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isResetting]);
 
+  const shredClient = createPublicShredClient({
+    chain: riseTestnet,
+    transport: shredsWebSocket(), // Replace with your Shreds WebSocket endpoint
+  });
+
   return {
+    shredClient,
     isResetting,
     wallet,
     setIsResetting,

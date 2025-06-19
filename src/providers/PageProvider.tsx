@@ -28,6 +28,12 @@ export type PageContextType = {
   brushSize: number;
   setBrushSize: (props: number) => void;
 
+  pendingTx: number;
+  setPendingTx: (props: number) => void;
+
+  completedTx: number;
+  setCompletedTx: (props: number) => void;
+
   processingType: "batch" | "individual";
   setProcessingType: (props: "batch" | "individual") => void;
 };
@@ -47,6 +53,12 @@ const initialState: PageContextType = {
 
   brushSize: 5,
   setBrushSize: () => {},
+
+  pendingTx: 5,
+  setPendingTx: () => {},
+
+  completedTx: 5,
+  setCompletedTx: () => {},
 
   processingType: "batch",
   setProcessingType: () => {},
@@ -72,6 +84,9 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
     b: 181,
   });
 
+  const [pendingTx, setPendingTx] = useState(0);
+  const [completedTx, setCompletedTx] = useState(0);
+
   const providerValue = useMemo(() => {
     return {
       view,
@@ -91,6 +106,12 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
 
       processingType,
       setProcessingType,
+
+      pendingTx,
+      setPendingTx,
+
+      completedTx,
+      setCompletedTx,
     };
   }, [
     view,
@@ -99,6 +120,8 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
     rgbValues,
     brushSize,
     processingType,
+    pendingTx,
+    completedTx,
   ]);
 
   return (
