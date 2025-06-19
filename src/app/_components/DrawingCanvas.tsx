@@ -1,12 +1,15 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useWallet } from "@/hooks/contract/useWallet";
+import { useModal } from "@/hooks/useModal";
 import { usePage } from "@/hooks/usePage";
 import { cn } from "@/lib/utils";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { BeatLoader } from "react-spinners";
+import { formatEther } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { useReadContract, useTransactionCount } from "wagmi";
+import { useBalance, useReadContract, useTransactionCount } from "wagmi";
 import canvasAbi from "../../../abi/canvasAbi.json";
+import { FundWallet } from "./FundWallet";
 
 type TransactionQueue = {
   x: number;
@@ -26,6 +29,7 @@ const CONTRACT_ADDRESS = "0xF8557708e908CBbBD3DB3581135844d49d61E2a8";
 export function DrawingCanvas() {
   const canvasSize = 64;
   const batchSize = 50;
+  const gasAllowanceRqmt = 0.000000008;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -58,7 +62,13 @@ export function DrawingCanvas() {
     functionName: "getTiles",
   });
 
+  const { showModal } = useModal();
+
   const { wallet, getStoredWallet, generateWalletClient } = useWallet();
+
+  const balance = useBalance({
+    address: wallet.account.address,
+  });
 
   const transaction = useTransactionCount({ address: wallet.account.address });
 
@@ -85,25 +95,38 @@ export function DrawingCanvas() {
     const { r, g, b } = txQueue[0];
 
     console.log("txQueue:: ", txQueue);
+    console.log("balance:: ", balance.data?.value);
     console.log("processing...");
 
     const tileIndices = txQueue.map((tx) => tx.x * canvasSize + tx.y);
 
-    const txHash = await client.writeContract({
-      address: CONTRACT_ADDRESS,
-      abi: canvasAbi,
-      functionName: "paintTiles",
-      args: [tileIndices, r, g, b],
-    });
+    try {
+      const txHash = await client.writeContract({
+        address: CONTRACT_ADDRESS,
+        abi: canvasAbi,
+        functionName: "paintTiles",
+        args: [tileIndices, r, g, b],
+      });
 
-    if (txHash) {
-      const completedTx = [...sentTransactions.transactions, ...txQueue];
-      setSentTransactions({ sentTime: Date.now(), transactions: completedTx });
-      setTxQueue((prev) => prev.slice(tileIndices.length));
+      if (txHash) {
+        const completedTx = [...sentTransactions.transactions, ...txQueue];
+        setSentTransactions({
+          sentTime: Date.now(),
+          transactions: completedTx,
+        });
+        setTxQueue((prev) => prev.slice(tileIndices.length));
+        setIsTxProcessing(false);
+      }
+      console.log("processing completed...");
+    } catch (e) {
+      console.error("Error!", e);
+      const accountBalance = formatEther(balance?.data?.value ?? 0n);
+      if (gasAllowanceRqmt > Number(accountBalance)) {
+        showModal({ content: <FundWallet />, title: "Embedded Wallet" });
+      }
       setIsTxProcessing(false);
     }
 
-    console.log("processing completed...");
     console.log("==============================================");
   };
 
@@ -111,18 +134,7 @@ export function DrawingCanvas() {
     nativeEvent,
   }: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
-
     if (!canvas) return;
-    // const rect = canvas.getBoundingClientRect();
-    // const scaleX = canvas.width / rect.width;
-    // const scaleY = canvas.height / rect.height;
-
-    // const x = (nativeEvent.clientX - rect.left) * scaleX;
-    // const y = (nativeEvent.clientY - rect.top) * scaleY;
-
-    // if (!contextRef.current) return;
-    // contextRef.current.beginPath();
-    // contextRef.current.moveTo(x, y);
     setIsDrawing(true);
   };
 
@@ -131,7 +143,9 @@ export function DrawingCanvas() {
     contextRef.current.closePath();
     setIsDrawing(false);
 
-    await processTx();
+    if (balance.data?.value !== 0n) {
+      await processTx();
+    }
   };
 
   const draw = ({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) => {

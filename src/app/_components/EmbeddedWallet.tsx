@@ -48,7 +48,7 @@ export function EmbeddedWalletContent() {
             </p>
             <Button
               variant="ghost"
-              className="p-0 hover:opacity-25"
+              className="p-0 hover:opacity-50"
               asChild
               onClick={() => {
                 handleCopy(wallet.account.address);
