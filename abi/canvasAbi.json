@@ -110,5 +110,77 @@
     "inputs": [],
     "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view"
-  }
+  },
+  {
+    "type": "event",
+    "name": "tilePainted",
+    "inputs": [
+      {
+        "name": "x",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "y",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "r",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
+      },
+      {
+        "name": "g",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
+      },
+      {
+        "name": "b",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "tilesPainted",
+    "inputs": [
+      {
+        "name": "indices",
+        "type": "uint256[]",
+        "indexed": false,
+        "internalType": "uint256[]"
+      },
+      {
+        "name": "r",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
+      },
+      {
+        "name": "g",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
+      },
+      {
+        "name": "b",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
+      }
+    ],
+    "anonymous": false
+  },
+  { "type": "error", "name": "OutOfBoundsX", "inputs": [] },
+  { "type": "error", "name": "OutOfBoundsY", "inputs": [] },
+  { "type": "error", "name": "TileIndexOutOfBounds", "inputs": [] },
+  { "type": "error", "name": "ValueOutOfBounds", "inputs": [] }
 ]

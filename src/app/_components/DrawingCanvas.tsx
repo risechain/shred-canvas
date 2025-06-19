@@ -15,31 +15,31 @@ type TransactionQueue = {
   b: number;
 };
 
-type Transaction = TransactionQueue & {
-  sentTime: number;
+type Transaction = {
+  sentTime?: number;
+  transactions: TransactionQueue[];
 };
 
-const CONTRACT_ADDRESS = "0xf7d0a6C2c2f653e762DEc942Fc727f10d103cB87";
+const CONTRACT_ADDRESS = "0xF8557708e908CBbBD3DB3581135844d49d61E2a8";
 
 export function DrawingCanvas() {
   const canvasSize = 64;
-  const batchSize = 2;
+  const batchSize = 50;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
 
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
   const [isProcessingQueue, setIsProcessingQueue] = useState<boolean>(false);
-  const [queue, setQueue] = useState<TransactionQueue[]>([]);
   const [txQueue, setTxQueue] = useState<TransactionQueue[]>([]);
   const [lastTx, setLastTx] = useState<Partial<TransactionQueue>>({
     x: 0,
     y: 0,
   });
 
-  const [sentTransactions, setSentTransactions] = useState<Transaction[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [txResp, setTxResp] = useState<any>();
+  const [sentTransactions, setSentTransactions] = useState<Transaction>({
+    transactions: [],
+  });
 
   const {
     brushColor,
@@ -50,23 +50,60 @@ export function DrawingCanvas() {
     setPendingTx,
   } = usePage();
 
-  // console.log("txQueue:: ", txQueue);
-
   const tiles = useReadContract({
     abi: canvasAbi,
     address: CONTRACT_ADDRESS,
     functionName: "getTiles",
   });
 
-  const { wallet, getStoredWallet, generateWalletClient, shredClient } =
-    useWallet();
+  const { wallet, getStoredWallet, generateWalletClient } = useWallet();
+
   const transaction = useTransactionCount({ address: wallet.account.address });
 
-  // shredClient.watchShreds({
-  //   onShred: (shred) => {
-  //     console.log("New shred from decorated client:", shred);
-  //   },
-  // });
+  const client = useMemo(() => {
+    if (!getStoredWallet()?.privateKey) return;
+
+    const account = privateKeyToAccount(getStoredWallet()?.privateKey ?? "");
+    const client = generateWalletClient(account);
+
+    return client;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getStoredWallet()?.privateKey]);
+
+  /**
+   * Process transaction individually
+   * 1. Send transaction onStopDrawing
+   * 2. each stop will be in one batch
+   */
+  const processTx = async () => {
+    if (isProcessingQueue || !client || txQueue.length === 0) return;
+
+    setIsProcessingQueue(true);
+
+    const { r, g, b } = txQueue[0];
+
+    console.log("txQueue:: ", txQueue);
+    console.log("processing...");
+
+    const tileIndices = txQueue.map((tx) => tx.x * canvasSize + tx.y);
+
+    const txHash = await client.writeContract({
+      address: CONTRACT_ADDRESS,
+      abi: canvasAbi,
+      functionName: "paintTiles",
+      args: [tileIndices, r, g, b],
+    });
+
+    if (txHash) {
+      const completedTx = [...sentTransactions.transactions, ...txQueue];
+      setSentTransactions({ sentTime: Date.now(), transactions: completedTx });
+      setTxQueue([]);
+      setIsProcessingQueue(false);
+    }
+
+    console.log("processing completed...");
+    console.log("==============================================");
+  };
 
   const startDrawing = ({
     nativeEvent,
@@ -87,10 +124,11 @@ export function DrawingCanvas() {
     setIsDrawing(true);
   };
 
-  const stopDrawing = () => {
+  const stopDrawing = async () => {
     if (!contextRef.current) return;
     contextRef.current.closePath();
     setIsDrawing(false);
+    await processTx();
   };
 
   const draw = ({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) => {
@@ -216,9 +254,8 @@ export function DrawingCanvas() {
       data[index + 3] = 255; // Alpha
     }
 
-    console.log("sentTransactions:: ", sentTransactions);
     // Apply sent transactions overlay
-    sentTransactions.forEach((tx) => {
+    sentTransactions.transactions.forEach((tx) => {
       const index = coordToBufferIndex(tx.x, tx.y);
       const pixelIndex = index * 4;
 
@@ -290,93 +327,12 @@ export function DrawingCanvas() {
   // }, [sentTransactions]);
 
   // Effect to render canvas whenever any of the layers change
-  // useEffect(() => {
-  //   // renderCanvas();
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [tiles.data, txQueue, sentTransactions]);
-
-  const client = useMemo(() => {
-    if (!getStoredWallet()?.privateKey) return;
-
-    const account = privateKeyToAccount(getStoredWallet()?.privateKey ?? "");
-    const client = generateWalletClient(account);
-
-    return client;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getStoredWallet()?.privateKey]);
-
-  /**
-   * Process transaction individually
-   * 1.
-   */
-  const processTx = async () => {
-    if (isProcessingQueue || queue.length === 0 || !client) return;
-
-    setIsProcessingQueue(true);
-
-    console.log("processing...");
-    console.log("queue:: ", queue);
-
-    queue.forEach((tx, index) => {
-      const txHash = client.writeContract({
-        address: CONTRACT_ADDRESS,
-        abi: canvasAbi,
-        functionName: "setTile",
-        args: [tx.y, tx.x, tx.r, tx.g, tx.b],
-      });
-      setTxResp(txHash);
-      console.log("txHash:: ", txHash);
-      console.log("tx:: ", tx.x, tx.y, tx.r, tx.g, tx.b);
-
-      setSentTransactions((prev) => [
-        ...prev,
-        {
-          ...tx,
-          sentTime: Date.now(),
-        },
-      ]);
-    });
-
-    const clearBatch = txQueue.slice(batchSize);
-    setTxQueue([...clearBatch]);
-    setQueue([]);
-    setIsProcessingQueue(false);
-
-    console.log("processing completed...");
-  };
-
-  const queueTx = () => {
-    if (txQueue.length < batchSize) return;
-
-    const batch = txQueue.slice(0, batchSize);
-    setQueue([...batch]);
-  };
-
   useEffect(() => {
-    console.log("txQueue:: ", txQueue);
     renderCanvas();
-    setCompletedTx(sentTransactions.length);
+    setCompletedTx(sentTransactions.transactions.length);
     setPendingTx(txQueue.length);
-    queueTx();
-
-    console.log("==============================================");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tiles.data, txQueue, sentTransactions]);
-
-  // useEffect(() => {
-
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [txQueue]);
-
-  useEffect(() => {
-    console.log("queue:: ", queue);
-    if (processingType === "individual") {
-      processTx();
-    } else {
-      // TODO: add processTxByBatch
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queue]);
 
   // On initial load of the canvas
   useEffect(() => {
@@ -423,7 +379,7 @@ export function DrawingCanvas() {
         onTouchStart={touchStart}
         onTouchMove={touchMove}
         onTouchEnd={stopDrawing}
-        className="cursor-crosshair touch-none w-full aspect-square max-w-[820px]"
+        className="cursor-crosshair touch-none aspect-square w-full max-w-[820px] max-h-[820px]"
         style={{
           imageRendering: "pixelated",
         }}
