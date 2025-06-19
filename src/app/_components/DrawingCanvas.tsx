@@ -3,6 +3,7 @@ import { useWallet } from "@/hooks/contract/useWallet";
 import { usePage } from "@/hooks/usePage";
 import { cn } from "@/lib/utils";
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { BeatLoader } from "react-spinners";
 import { privateKeyToAccount } from "viem/accounts";
 import { useReadContract, useTransactionCount } from "wagmi";
 import canvasAbi from "../../../abi/canvasAbi.json";
@@ -30,7 +31,6 @@ export function DrawingCanvas() {
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
 
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
-  const [isProcessingQueue, setIsProcessingQueue] = useState<boolean>(false);
   const [txQueue, setTxQueue] = useState<TransactionQueue[]>([]);
   const [lastTx, setLastTx] = useState<Partial<TransactionQueue>>({
     x: 0,
@@ -48,6 +48,8 @@ export function DrawingCanvas() {
     processingType,
     setCompletedTx,
     setPendingTx,
+    isTxProcessing,
+    setIsTxProcessing,
   } = usePage();
 
   const tiles = useReadContract({
@@ -76,9 +78,9 @@ export function DrawingCanvas() {
    * 2. each stop will be in one batch
    */
   const processTx = async () => {
-    if (isProcessingQueue || !client || txQueue.length === 0) return;
+    if (isTxProcessing || !client || txQueue.length === 0) return;
 
-    setIsProcessingQueue(true);
+    setIsTxProcessing(true);
 
     const { r, g, b } = txQueue[0];
 
@@ -97,8 +99,8 @@ export function DrawingCanvas() {
     if (txHash) {
       const completedTx = [...sentTransactions.transactions, ...txQueue];
       setSentTransactions({ sentTime: Date.now(), transactions: completedTx });
-      setTxQueue([]);
-      setIsProcessingQueue(false);
+      setTxQueue((prev) => prev.slice(tileIndices.length));
+      setIsTxProcessing(false);
     }
 
     console.log("processing completed...");
@@ -128,12 +130,12 @@ export function DrawingCanvas() {
     if (!contextRef.current) return;
     contextRef.current.closePath();
     setIsDrawing(false);
+
     await processTx();
   };
 
   const draw = ({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
-    // console.log("drawing...");
 
     const canvas = canvasRef.current;
 
@@ -145,15 +147,15 @@ export function DrawingCanvas() {
     const x = Math.floor((nativeEvent.x - rect.left) * scaleX);
     const y = Math.floor((nativeEvent.y - rect.top) * scaleY);
 
-    // console.log({
-    //   x,
-    //   y,
-    //   r: rgbValues.r,
-    //   g: rgbValues.g,
-    //   b: rgbValues.b,
-    // });
-
+    // Do not remove this -- this will prevent from adding duplicating coordinates in txQueue
     if (lastTx.x === x && lastTx.y === y) return;
+    setLastTx({
+      x,
+      y,
+      r: rgbValues.r,
+      g: rgbValues.g,
+      b: rgbValues.b,
+    });
 
     // Add transaction to queue (no direct drawing on canvas)
     setTxQueue((prev) => [
@@ -166,14 +168,6 @@ export function DrawingCanvas() {
         b: rgbValues.b,
       },
     ]);
-
-    setLastTx({
-      x,
-      y,
-      r: rgbValues.r,
-      g: rgbValues.g,
-      b: rgbValues.b,
-    });
   };
 
   const touchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
@@ -359,9 +353,15 @@ export function DrawingCanvas() {
   return (
     <div
       className={cn(
-        "flex-1 flex items-center justify-center h-full w-full bg-foreground/75 dark:bg-accent/35"
+        "relative flex-1 flex flex-col gap-2 items-center justify-center h-full w-full bg-foreground/75 dark:bg-accent/35"
       )}
     >
+      <BeatLoader
+        color="var(--color-white)"
+        size={12}
+        loading={isTxProcessing}
+        className="absolute bottom-4"
+      />
       <canvas
         ref={canvasRef}
         onMouseDown={startDrawing}

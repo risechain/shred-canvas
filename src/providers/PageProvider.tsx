@@ -14,10 +14,10 @@ export type PageContextType = {
    * For Apps and Build page
    */
   view: View;
-  isProjectsLoading: boolean;
-
   setView: (view: View) => void;
-  setIsProjectsLoading: (value: boolean) => void;
+
+  isTxProcessing: boolean;
+  setIsTxProcessing: (value: boolean) => void;
 
   brushColor: string;
   setBrushColor: (value: string) => void;
@@ -40,10 +40,10 @@ export type PageContextType = {
 
 const initialState: PageContextType = {
   view: "grid",
-  isProjectsLoading: true,
-
   setView: () => {},
-  setIsProjectsLoading: () => {},
+
+  isTxProcessing: false,
+  setIsTxProcessing: () => {},
 
   brushColor: "#000000",
   setBrushColor: () => {},
@@ -70,7 +70,7 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [view, setView] = useState<View>("grid");
-  const [isProjectsLoading, setIsProjectsLoading] = useState<boolean>(true);
+  const [isTxProcessing, setIsTxProcessing] = useState<boolean>(false);
 
   const [processingType, setProcessingType] = useState<"batch" | "individual">(
     "individual"
@@ -90,10 +90,10 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
   const providerValue = useMemo(() => {
     return {
       view,
-      isProjectsLoading,
-
       setView,
-      setIsProjectsLoading,
+
+      isTxProcessing,
+      setIsTxProcessing,
 
       brushColor,
       setBrushColor,
@@ -115,7 +115,7 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [
     view,
-    isProjectsLoading,
+    isTxProcessing,
     brushColor,
     rgbValues,
     brushSize,

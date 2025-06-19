@@ -16,8 +16,8 @@ export function NavigationBar() {
 
   return (
     <div className="flex items-center justify-center rounded-t-sm w-full pt-2 pb-2.5 px-4 bg-primary">
-      <div className="flex justify-between items-center w-full">
-        <div className="flex items-center justify-start gap-4">
+      <div className="flex flex-wrap justify-between items-center w-full">
+        <div className="flex flex-wrap items-center justify-start gap-4">
           <RiseLogo preferredLogoTheme="dark" />
         </div>
         <div className="flex items-center justify-start gap-1">
@@ -59,7 +59,7 @@ export function NavigationBar() {
           </Button>
           <Separator
             orientation="vertical"
-            className="min-h-6 bg-separator-secondary md:hidden"
+            className="min-h-6 bg-separator-secondary md:hidden ml-2"
           />
           <Button
             variant="ghost"
