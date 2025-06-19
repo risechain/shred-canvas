@@ -118,6 +118,7 @@ export function EmbeddedWalletContent() {
               Individual
             </ToggleGroupItem>
             <ToggleGroupItem
+              disabled
               value="batch"
               className="px-4"
               onClick={() => {
