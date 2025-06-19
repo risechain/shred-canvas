@@ -143,9 +143,7 @@ export function DrawingCanvas() {
     contextRef.current.closePath();
     setIsDrawing(false);
 
-    if (balance.data?.value !== 0n) {
-      await processTx();
-    }
+    await processTx();
   };
 
   const draw = ({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) => {
