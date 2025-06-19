@@ -9,6 +9,7 @@ import { usePage } from "@/hooks/usePage";
 import { getMaskedAddress } from "@/lib/utils";
 import { CopyIcon } from "lucide-react";
 import Link from "next/link";
+import { formatEther } from "viem";
 import { useBalance, useTransactionCount } from "wagmi";
 
 export function EmbeddedWalletContent() {
@@ -39,36 +40,40 @@ export function EmbeddedWalletContent() {
       <div className="flex flex-col gap-2">
         <Separator />
 
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm md:text-md text-text-secondary">Address:</p>
-          <div className="flex gap-1 items-center">
+          <div className="flex gap-4 items-center">
             <p className="text-sm md:text-md">
               {getMaskedAddress(wallet.account.address)}
             </p>
             <Button
-              variant="secondary"
+              variant="ghost"
+              className="p-0 hover:opacity-25"
+              asChild
               onClick={() => {
                 handleCopy(wallet.account.address);
               }}
             >
-              <CopyIcon size={12} />
+              <CopyIcon size={16} />
             </Button>
           </div>
         </div>
 
         <Separator />
 
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm md:text-md text-text-secondary">Balance:</p>
           <div className="flex gap-1 items-center">
-            <p className="text-sm md:text-md">{balance.data?.value ?? 0}</p>
+            <p className="text-sm md:text-md">
+              {formatEther(balance.data?.value ?? 0n)}
+            </p>
             <p className="text-sm md:text-md">{balance.data?.symbol}</p>
           </div>
         </div>
 
         <Separator />
 
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm md:text-md text-text-secondary">
             Current Nonce:
           </p>
@@ -79,7 +84,7 @@ export function EmbeddedWalletContent() {
 
         <Separator />
 
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm md:text-md text-text-secondary">
             Pending Transactions:
           </p>
@@ -88,7 +93,7 @@ export function EmbeddedWalletContent() {
 
         <Separator />
 
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm md:text-md text-text-secondary">
             Sent Transactions:
           </p>

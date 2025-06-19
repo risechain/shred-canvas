@@ -61,7 +61,7 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isProjectsLoading, setIsProjectsLoading] = useState<boolean>(true);
 
   const [processingType, setProcessingType] = useState<"batch" | "individual">(
-    "batch"
+    "individual"
   );
 
   const [brushColor, setBrushColor] = useState("#1856bf");

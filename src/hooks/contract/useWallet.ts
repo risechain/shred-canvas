@@ -29,9 +29,9 @@ export function useWallet() {
     }
   }
 
-  function generateWalletClient(address: `0x${string}` | Account) {
+  function generateWalletClient(account: `0x${string}` | Account) {
     const walletClient = createWalletClient({
-      account: address,
+      account,
       chain: riseTestnet,
       transport: http(),
     });
@@ -44,7 +44,7 @@ export function useWallet() {
     const account = privateKeyToAccount(privateKey);
 
     setStoredWallet(account.address, privateKey);
-    return generateWalletClient(privateKey);
+    return generateWalletClient(account);
   }
 
   const wallet = useMemo(() => {
