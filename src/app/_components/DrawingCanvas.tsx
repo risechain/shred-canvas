@@ -356,14 +356,6 @@ export function DrawingCanvas() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Update context when brush properties change
-  useEffect(() => {
-    if (contextRef.current) {
-      contextRef.current.strokeStyle = brushColor;
-      contextRef.current.lineWidth = brushSize;
-    }
-  }, [brushColor, brushSize]);
-
   return (
     <div
       className={cn(
