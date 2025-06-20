@@ -8,13 +8,15 @@ import {
 import { useWallet } from "@/hooks/contract/useWallet";
 import { usePage } from "@/hooks/usePage";
 import { getMaskedAddress } from "@/lib/utils";
-import { CopyIcon } from "lucide-react";
+import { CopyIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 import { formatEther } from "viem";
 import { useBalance, useTransactionCount } from "wagmi";
 
 export function EmbeddedWalletContent() {
-  const { setIsResetting, resetWalletClient, wallet } = useWallet();
+  const { setIsResetting, resetWalletClient, wallet, getStoredWallet } =
+    useWallet();
   const { processingType, pendingTx, completedTx, batchSize, setBatchSize } =
     usePage();
 
@@ -24,6 +26,8 @@ export function EmbeddedWalletContent() {
 
   const transaction = useTransactionCount({ address: wallet.account.address });
 
+  const [inputType, setInputType] = useState<"password" | "text">("password");
+
   async function handleCopy(text: string) {
     try {
       await navigator.clipboard.writeText(text);
@@ -32,6 +36,8 @@ export function EmbeddedWalletContent() {
       alert("Failed to copy!");
     }
   }
+
+  const storedWallet = getStoredWallet();
 
   return (
     <div>
@@ -45,7 +51,7 @@ export function EmbeddedWalletContent() {
           <p className="text-sm md:text-md text-text-secondary">Address:</p>
           <div className="flex gap-4 items-center">
             <p className="text-sm md:text-md">
-              {getMaskedAddress(wallet.account.address)}
+              {getMaskedAddress(storedWallet.address)}
             </p>
             <Button
               variant="ghost"
@@ -57,6 +63,49 @@ export function EmbeddedWalletContent() {
             >
               <CopyIcon size={16} />
             </Button>
+          </div>
+        </div>
+
+        <Separator />
+
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm md:text-md text-text-secondary">Private Key:</p>
+          <div className="flex gap-4 items-center">
+            <input
+              type={inputType}
+              value={storedWallet.privateKey}
+              className="w-full text-sm"
+            />
+            <div className="flex gap-3 items-center">
+              <Button
+                variant="ghost"
+                className="p-0 hover:opacity-50"
+                asChild
+                onClick={() => {
+                  if (inputType === "password") {
+                    setInputType("text");
+                  } else {
+                    setInputType("password");
+                  }
+                }}
+              >
+                {inputType !== "password" ? (
+                  <EyeIcon size={18} />
+                ) : (
+                  <EyeOffIcon size={18} />
+                )}
+              </Button>
+              <Button
+                variant="ghost"
+                className="p-0 hover:opacity-50"
+                asChild
+                onClick={() => {
+                  handleCopy(storedWallet.privateKey);
+                }}
+              >
+                <CopyIcon size={16} />
+              </Button>
+            </div>
           </div>
         </div>
 
