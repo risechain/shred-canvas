@@ -4,8 +4,6 @@ import {
   CollapsibleContent,
   Input,
   Separator,
-  ToggleGroup,
-  ToggleGroupItem,
 } from "@/components/ui";
 import { useWallet } from "@/hooks/contract/useWallet";
 import { usePage } from "@/hooks/usePage";
@@ -17,14 +15,8 @@ import { useBalance, useTransactionCount } from "wagmi";
 
 export function EmbeddedWalletContent() {
   const { setIsResetting, resetWalletClient, wallet } = useWallet();
-  const {
-    processingType,
-    setProcessingType,
-    pendingTx,
-    completedTx,
-    batchSize,
-    setBatchSize,
-  } = usePage();
+  const { processingType, pendingTx, completedTx, batchSize, setBatchSize } =
+    usePage();
 
   const balance = useBalance({
     address: wallet.account.address,
