@@ -4,7 +4,7 @@ import { useModal } from "@/hooks/useModal";
 import { usePage } from "@/hooks/usePage";
 import { cn } from "@/lib/utils";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { BeatLoader } from "react-spinners";
+import { HashLoader } from "react-spinners";
 import { formatEther } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { useBalance, useReadContract } from "wagmi";
@@ -358,11 +358,11 @@ export function DrawingCanvas() {
         "relative flex-1 flex flex-col gap-2 items-center justify-center h-full w-full bg-foreground/75 dark:bg-accent/35"
       )}
     >
-      <BeatLoader
+      <HashLoader
         color="white"
-        size={12}
+        size={36}
         loading={isTxProcessing}
-        className="absolute bottom-4"
+        style={{ position: "absolute", bottom: 32, right: 32 }}
       />
       <canvas
         ref={canvasRef}

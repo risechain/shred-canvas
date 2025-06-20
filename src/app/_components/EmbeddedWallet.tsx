@@ -148,6 +148,7 @@ export function EmbeddedWalletContent() {
               </p>
               <Input
                 type="number"
+                min={100}
                 value={batchSize}
                 onChange={(event) => {
                   const value = Number(event.target.value);
