@@ -1,5 +1,8 @@
 import {
   Button,
+  Collapsible,
+  CollapsibleContent,
+  Input,
   Separator,
   ToggleGroup,
   ToggleGroupItem,
@@ -14,8 +17,14 @@ import { useBalance, useTransactionCount } from "wagmi";
 
 export function EmbeddedWalletContent() {
   const { setIsResetting, resetWalletClient, wallet } = useWallet();
-  const { processingType, setProcessingType, pendingTx, completedTx } =
-    usePage();
+  const {
+    processingType,
+    setProcessingType,
+    pendingTx,
+    completedTx,
+    batchSize,
+    setBatchSize,
+  } = usePage();
 
   const balance = useBalance({
     address: wallet.account.address,
@@ -104,7 +113,7 @@ export function EmbeddedWalletContent() {
 
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm md:text-md text-text-secondary">
-            Transaction Processing:
+            Processing Option:
           </p>
 
           <ToggleGroup type="single" value={processingType}>
@@ -118,21 +127,41 @@ export function EmbeddedWalletContent() {
               Individual
             </ToggleGroupItem>
             <ToggleGroupItem
-              disabled
               value="batch"
               className="px-4"
               onClick={() => {
                 setProcessingType("batch");
               }}
             >
-              Batch
+              By Batch
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
 
         <Separator />
+
+        <Collapsible open={processingType === "batch"}>
+          <CollapsibleContent className="space-y-3">
+            <div className="flex gap-2 justify-between items-center">
+              <p className="flex-1 text-sm md:text-md text-text-secondary">
+                Batch Size:
+              </p>
+              <Input
+                type="number"
+                value={batchSize}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  if (value > 1000) return;
+                  setBatchSize(value);
+                }}
+                className="flex-1 border border-border-primary rounded"
+              />
+            </div>
+            <Separator />
+          </CollapsibleContent>
+        </Collapsible>
       </div>
-      <div className="flex flex-wrap gap-2 pt-8 justify-end">
+      <div className="flex flex-wrap gap-2 pt-4 justify-end">
         <Button
           className="flex-1 rounded-md"
           onClick={() => {

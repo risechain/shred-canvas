@@ -7,7 +7,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { BeatLoader } from "react-spinners";
 import { formatEther } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { useBalance, useReadContract, useTransactionCount } from "wagmi";
+import { useBalance, useReadContract } from "wagmi";
 import canvasAbi from "../../../abi/canvasAbi.json";
 import { FundWallet } from "./FundWallet";
 
@@ -28,7 +28,6 @@ const CONTRACT_ADDRESS = "0xF8557708e908CBbBD3DB3581135844d49d61E2a8";
 
 export function DrawingCanvas() {
   const canvasSize = 64;
-  const batchSize = 50;
   const gasAllowanceRqmt = 0.000000008;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -70,7 +69,7 @@ export function DrawingCanvas() {
     address: wallet.account.address,
   });
 
-  const transaction = useTransactionCount({ address: wallet.account.address });
+  const { batchSize } = usePage();
 
   const client = useMemo(() => {
     if (!getStoredWallet()?.privateKey) return;
@@ -89,16 +88,21 @@ export function DrawingCanvas() {
    */
   const processTx = async () => {
     if (isTxProcessing || !client || txQueue.length === 0) return;
+    if (processingType === "batch" && txQueue.length < batchSize) return;
+
+    let queue = [...txQueue];
+    if (processingType === "batch") {
+      queue = [...txQueue.slice(0, batchSize)];
+    }
 
     setIsTxProcessing(true);
 
     const { r, g, b } = txQueue[0];
 
     console.log("txQueue:: ", txQueue);
-    console.log("balance:: ", balance.data?.value);
     console.log("processing...");
 
-    const tileIndices = txQueue.map((tx) => tx.x * canvasSize + tx.y);
+    const tileIndices = queue.map((tx) => tx.x * canvasSize + tx.y);
 
     try {
       const txHash = await client.writeContract({
@@ -115,7 +119,6 @@ export function DrawingCanvas() {
           transactions: completedTx,
         });
         setTxQueue((prev) => prev.slice(tileIndices.length));
-        setIsTxProcessing(false);
       }
       console.log("processing completed...");
     } catch (e) {
@@ -124,6 +127,13 @@ export function DrawingCanvas() {
       if (gasAllowanceRqmt > Number(accountBalance)) {
         showModal({ content: <FundWallet />, title: "Embedded Wallet" });
       }
+    }
+
+    // clear the loading state when there is no pending transaction
+    if (
+      (processingType === "batch" && batchSize <= txQueue.length) ||
+      processingType === "individual"
+    ) {
       setIsTxProcessing(false);
     }
 
@@ -143,7 +153,9 @@ export function DrawingCanvas() {
     contextRef.current.closePath();
     setIsDrawing(false);
 
-    await processTx();
+    if (processingType === "individual") {
+      await processTx();
+    }
   };
 
   const draw = ({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) => {
@@ -287,35 +299,6 @@ export function DrawingCanvas() {
     context.putImageData(imageData, 0, 0);
   };
 
-  // Modified queue processor to move processed transactions to sentTransactions
-  // useEffect(() => {
-  //   if (!wallet) return;
-
-  //   const processQueue = async () => {
-  //     if (isProcessingQueue || txQueue.length === 0) return;
-
-  //     // setIsProcessingQueue(true);
-
-  //     try {
-  //       // Call the appropriate processing function based on the batchTxs flag
-  //       if (processingType === "individual") {
-  //         // await processTransaction();
-  //       } else {
-  //         // await processIndividualApproach();
-  //       }
-  //     } catch (error) {
-  //       console.error("Error processing transaction batch:", error);
-  //     } finally {
-  //       // setIsProcessingQueue(false);
-  //     }
-  //   };
-
-  //   // Process queue every 50ms
-  //   // const interval = setInterval(processQueue, 50);
-  //   // return () => clearInterval(interval);
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [lastTx?.x, lastTx?.y]);
-
   // New effect to cleanup old sent transactions after 2 seconds
   // useEffect(() => {
   //   if (sentTransactions.length === 0) return;
@@ -339,6 +322,13 @@ export function DrawingCanvas() {
     setPendingTx(txQueue.length);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tiles.data, txQueue, sentTransactions]);
+
+  useEffect(() => {
+    if (processingType === "batch" && batchSize <= txQueue.length) {
+      processTx();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [batchSize, processingType, txQueue]);
 
   // On initial load of the canvas
   useEffect(() => {
@@ -369,7 +359,7 @@ export function DrawingCanvas() {
       )}
     >
       <BeatLoader
-        color="var(--color-white)"
+        color="white"
         size={12}
         loading={isTxProcessing}
         className="absolute bottom-4"

@@ -36,6 +36,9 @@ export type PageContextType = {
 
   processingType: "batch" | "individual";
   setProcessingType: (props: "batch" | "individual") => void;
+
+  batchSize: number;
+  setBatchSize: (props: number) => void;
 };
 
 const initialState: PageContextType = {
@@ -62,6 +65,9 @@ const initialState: PageContextType = {
 
   processingType: "batch",
   setProcessingType: () => {},
+
+  batchSize: 100,
+  setBatchSize: () => {},
 };
 
 export const PageContext = createContext<PageContextType>(initialState);
@@ -86,6 +92,7 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const [pendingTx, setPendingTx] = useState(0);
   const [completedTx, setCompletedTx] = useState(0);
+  const [batchSize, setBatchSize] = useState(100);
 
   const providerValue = useMemo(() => {
     return {
@@ -112,6 +119,9 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
 
       completedTx,
       setCompletedTx,
+
+      batchSize,
+      setBatchSize,
     };
   }, [
     view,
@@ -122,6 +132,7 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
     processingType,
     pendingTx,
     completedTx,
+    batchSize,
   ]);
 
   return (
