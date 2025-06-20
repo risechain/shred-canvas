@@ -1,5 +1,6 @@
-import { Separator } from "@/components/ui";
+import { Button, Separator } from "@/components/ui";
 import { usePage } from "@/hooks/usePage";
+import { PRESET_COLORS } from "@/lib/constants";
 import { HexColorInput, HexColorPicker } from "react-colorful";
 
 export function BrushSettings() {
@@ -42,7 +43,7 @@ export function BrushSettings() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <p className="text-md md:text-lg text-text-accent">Brush Settings</p>
       <div className="flex flex-wrap gap-3 items-center">
         <div
@@ -69,11 +70,26 @@ export function BrushSettings() {
 
       <Separator />
 
-      <HexColorPicker
-        color={brushColor}
-        onChange={handleHexChange}
-        style={{ width: "100%", height: "280px" }}
-      />
+      <div className="flex flex-wrap gap-2 bg-accent items-center justify-center p-2 rounded-md">
+        <HexColorPicker
+          color={brushColor}
+          onChange={handleHexChange}
+          style={{ width: "100%", height: "280px" }}
+        />
+        {PRESET_COLORS.map((presetColor) => {
+          return (
+            <Button
+              data-selected={presetColor === brushColor}
+              variant="ghost"
+              key={presetColor}
+              className="rounded border border-border-accent/25 w-6 h-6 p-0 hover:scale-125 transition-all data-[selected=true]:border-foreground data-[selected=true]:scale-125"
+              style={{ backgroundColor: presetColor }}
+              onClick={() => handleHexChange(presetColor)}
+            />
+          );
+        })}
+      </div>
+
       <HexColorInput
         prefixed
         color={brushColor}

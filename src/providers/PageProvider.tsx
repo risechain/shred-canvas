@@ -79,7 +79,7 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isTxProcessing, setIsTxProcessing] = useState<boolean>(false);
 
   const [processingType, setProcessingType] = useState<"batch" | "individual">(
-    "individual"
+    "batch"
   );
 
   const [brushColor, setBrushColor] = useState("#1856bf");
@@ -92,7 +92,7 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const [pendingTx, setPendingTx] = useState(0);
   const [completedTx, setCompletedTx] = useState(0);
-  const [batchSize, setBatchSize] = useState(100);
+  const [batchSize, setBatchSize] = useState(20);
 
   const providerValue = useMemo(() => {
     return {

@@ -115,27 +115,7 @@ export function EmbeddedWalletContent() {
           <p className="text-sm md:text-md text-text-secondary">
             Processing Option:
           </p>
-
-          <ToggleGroup type="single" value={processingType}>
-            <ToggleGroupItem
-              value="individual"
-              className="px-4"
-              onClick={() => {
-                setProcessingType("individual");
-              }}
-            >
-              Individual
-            </ToggleGroupItem>
-            <ToggleGroupItem
-              value="batch"
-              className="px-4"
-              onClick={() => {
-                setProcessingType("batch");
-              }}
-            >
-              By Batch
-            </ToggleGroupItem>
-          </ToggleGroup>
+          <p className="text-sm md:text-md">Batch</p>
         </div>
 
         <Separator />
