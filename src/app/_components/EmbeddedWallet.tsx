@@ -51,7 +51,7 @@ export function EmbeddedWalletContent() {
           <p className="text-sm md:text-md text-text-secondary">Address:</p>
           <div className="flex gap-4 items-center">
             <p className="text-sm md:text-md">
-              {getMaskedAddress(storedWallet.address)}
+              {getMaskedAddress(storedWallet?.address ?? "")}
             </p>
             <Button
               variant="ghost"
@@ -73,7 +73,7 @@ export function EmbeddedWalletContent() {
           <div className="flex gap-4 items-center">
             <input
               type={inputType}
-              value={storedWallet.privateKey}
+              value={storedWallet?.privateKey ?? ""}
               className="w-full text-sm"
             />
             <div className="flex gap-3 items-center">
