@@ -219,10 +219,9 @@
     color: var(--foreground) !important;
   }
 
-  .cf-turnstile > div {
-    height: 64px;
-    margin: -1px;
-    border-radius: 16px;
-    border: none;
+  .no-spinner::-webkit-outer-spin-button,
+  .no-spinner::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
   }
 }

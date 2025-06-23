@@ -30,3 +30,12 @@ export const parseCookie = (key: string) => {
     return value;
   }
 };
+
+export const handleCopy = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (error) {
+    console.error(error);
+    alert("Failed to copy!");
+  }
+};

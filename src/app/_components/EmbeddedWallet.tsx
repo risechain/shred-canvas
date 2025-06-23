@@ -7,7 +7,7 @@ import {
 } from "@/components/ui";
 import { useWallet } from "@/hooks/contract/useWallet";
 import { usePage } from "@/hooks/usePage";
-import { getMaskedAddress } from "@/lib/utils";
+import { getMaskedAddress, handleCopy } from "@/lib/utils";
 import { CopyIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -27,15 +27,6 @@ export function EmbeddedWalletContent() {
   const transaction = useTransactionCount({ address: wallet.account.address });
 
   const [inputType, setInputType] = useState<"password" | "text">("password");
-
-  async function handleCopy(text: string) {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch (error) {
-      console.error(error);
-      alert("Failed to copy!");
-    }
-  }
 
   const storedWallet = getStoredWallet();
 

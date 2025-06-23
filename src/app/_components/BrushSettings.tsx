@@ -1,11 +1,28 @@
-import { Button, Separator } from "@/components/ui";
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Input,
+  Separator,
+} from "@/components/ui";
 import { usePage } from "@/hooks/usePage";
 import { PRESET_COLORS } from "@/lib/constants";
+import { handleCopy } from "@/lib/utils";
+import { CopyIcon } from "lucide-react";
+import { useState } from "react";
 import { HexColorInput, HexColorPicker } from "react-colorful";
+
+type ColorCode = "HEX" | "RGB";
 
 export function BrushSettings() {
   const { brushColor, setBrushColor, rgbValues, setRgbValues, brushSize } =
     usePage();
+
+  const initialColorCode = localStorage.getItem("color-code") as ColorCode;
+
+  const [colorCode, setColorCode] = useState<ColorCode>(initialColorCode);
 
   function convertHexToRgb(hex: string) {
     const r = parseInt(hex.slice(1, 3), 16);
@@ -40,6 +57,11 @@ export function BrushSettings() {
 
     // convert hex to rgb
     convertHexToRgb(hex);
+  }
+
+  function handleSelectColorCode(code: ColorCode) {
+    setColorCode(code);
+    localStorage.setItem("color-code", code);
   }
 
   return (
@@ -90,52 +112,79 @@ export function BrushSettings() {
         })}
       </div>
 
-      <HexColorInput
-        prefixed
-        color={brushColor}
-        onChange={handleHexChange}
-        className="py-2 px-4 bg-accent rounded-md"
-      />
+      <div className="flex flex-wrap">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild className="min-w-16 rounded-l-sm">
+            <Button className="rounded-r-none rounded-l-sm">{colorCode}</Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem
+              active={colorCode === "HEX"}
+              onClick={() => handleSelectColorCode("HEX")}
+            >
+              Hex
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              active={colorCode === "RGB"}
+              onClick={() => handleSelectColorCode("RGB")}
+            >
+              RGB
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {colorCode === "HEX" ? (
+          <HexColorInput
+            prefixed
+            color={brushColor}
+            onChange={handleHexChange}
+            className="py-1 px-4 bg-accent rounded-none min-w-0 flex-1"
+          />
+        ) : (
+          <div className="flex flex-1">
+            <Input
+              min={0}
+              type="number"
+              value={rgbValues.r}
+              placeholder="R"
+              className="rounded-none border-none bg-accent text-red-400 text-center no-spinner"
+              onChange={(e) => handleRgbChange("r", parseInt(e.target.value))}
+            />
+            <Separator orientation="vertical" />
+            <Input
+              min={0}
+              type="number"
+              value={rgbValues.g}
+              placeholder="G"
+              className="rounded-none border-none bg-accent text-green-400 text-center no-spinner"
+              onChange={(e) => handleRgbChange("g", parseInt(e.target.value))}
+            />
+            <Separator orientation="vertical" />
+            <Input
+              min={0}
+              type="number"
+              value={rgbValues.b}
+              placeholder="B"
+              className="rounded-none border-none bg-accent text-blue-400 text-center no-spinner"
+              onChange={(e) => handleRgbChange("b", parseInt(e.target.value))}
+            />
+          </div>
+        )}
+        <Button
+          className="rounded-l-none"
+          onClick={() => {
+            const value =
+              colorCode === "HEX"
+                ? brushColor
+                : `rgb(${rgbValues.r},${rgbValues.g},${rgbValues.b})`;
+            handleCopy(value);
+          }}
+        >
+          <CopyIcon />
+        </Button>
+      </div>
 
       <Separator />
-
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-sm text-red-400 w-3">R</span>
-          <input
-            type="range"
-            min="0"
-            max="255"
-            value={rgbValues.r}
-            onChange={(e) => handleRgbChange("r", parseInt(e.target.value))}
-            className="flex-1 min-w-0 accent-red-500"
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-sm text-green-400 w-3">G</span>
-          <input
-            type="range"
-            min="0"
-            max="255"
-            value={rgbValues.g}
-            onChange={(e) => handleRgbChange("g", parseInt(e.target.value))}
-            className="flex-1 min-w-0 accent-green-700"
-          />
-        </div>
-
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-blue-400 w-3">B</span>
-          <input
-            type="range"
-            min="0"
-            max="255"
-            value={rgbValues.b}
-            onChange={(e) => handleRgbChange("b", parseInt(e.target.value))}
-            className="flex-1 min-w-0 accent-blue-500"
-          />
-        </div>
-      </div>
     </div>
   );
 }

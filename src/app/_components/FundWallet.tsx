@@ -1,7 +1,7 @@
 import { Button, Card } from "@/components/ui";
 import { useWallet } from "@/hooks/contract/useWallet";
 import { useModal } from "@/hooks/useModal";
-import { getMaskedAddress } from "@/lib/utils";
+import { getMaskedAddress, handleCopy } from "@/lib/utils";
 import { CopyIcon } from "lucide-react";
 import Link from "next/link";
 import { formatEther } from "viem";
@@ -15,15 +15,6 @@ export function FundWallet() {
   });
 
   const { onClose } = useModal();
-
-  async function handleCopy(text: string) {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch (error) {
-      console.error(error);
-      alert("Failed to copy!");
-    }
-  }
 
   return (
     <div className="flex flex-col gap-3">
