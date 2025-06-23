@@ -28,6 +28,7 @@ export function BrushSettings() {
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
     setRgbValues({ r, g, b });
+    localStorage.setItem("brush-rgb", JSON.stringify({ r, g, b }));
   }
 
   // Handle RGB input changes
@@ -53,7 +54,7 @@ export function BrushSettings() {
 
   function handleHexChange(hex: string) {
     setBrushColor(hex);
-    localStorage.setItem("brush-color", hex);
+    localStorage.setItem("brush-hex", hex);
 
     // convert hex to rgb
     convertHexToRgb(hex);
@@ -80,7 +81,7 @@ export function BrushSettings() {
       setBrushColors(formattedArray);
     }
 
-    localStorage.setItem("brush-color", color);
+    localStorage.setItem("brush-hex", color);
     setBrushColor(color);
   }
 
@@ -98,7 +99,7 @@ export function BrushSettings() {
 
     const newBrushColor = formattedArray[formattedArray.length - 1];
     setBrushColor(newBrushColor);
-    localStorage.setItem("brush-color", newBrushColor);
+    localStorage.setItem("brush-hex", newBrushColor);
   }
 
   useEffect(() => {

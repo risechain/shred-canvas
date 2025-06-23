@@ -136,11 +136,14 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
   ]);
 
   useEffect(() => {
-    const initialBrushColor = localStorage.getItem("brush-color") ?? "#1856bf";
+    const initialBrushHex = localStorage.getItem("brush-hex") ?? "#1856bf";
+    const initialBrushRgb = localStorage.getItem("brush-rgb");
     const initialBatchSize = localStorage.getItem("batch-size") ?? 20;
 
-    setBrushColor(initialBrushColor);
+    setBrushColor(initialBrushHex);
+    setRgbValues(initialBrushRgb ? JSON.parse(initialBrushRgb) : rgbValues);
     setBatchSize(Number(initialBatchSize));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
