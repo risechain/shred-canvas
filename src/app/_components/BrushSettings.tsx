@@ -11,7 +11,7 @@ import { usePage } from "@/hooks/usePage";
 import { PRESET_COLORS } from "@/lib/constants";
 import { handleCopy } from "@/lib/utils";
 import { CopyIcon, MinusIcon, PlusIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { HexColorInput, HexColorPicker } from "react-colorful";
 
 type ColorCode = "HEX" | "RGB";
@@ -20,19 +20,8 @@ export function BrushSettings() {
   const { brushColor, setBrushColor, rgbValues, setRgbValues, brushSize } =
     usePage();
 
-  const initialColorCode = localStorage.getItem("color-code") as ColorCode;
-  const colors = localStorage.getItem("brush-colors");
-
-  const [brushColors, setBrushColors] = useState<string[]>(savedColors());
-  const [colorCode, setColorCode] = useState<ColorCode>(initialColorCode);
-
-  function savedColors() {
-    if (!colors) {
-      return [];
-    } else {
-      return JSON.parse(colors);
-    }
-  }
+  const [brushColors, setBrushColors] = useState<string[]>([]);
+  const [colorCode, setColorCode] = useState<ColorCode>("HEX");
 
   function convertHexToRgb(hex: string) {
     const r = parseInt(hex.slice(1, 3), 16);
@@ -76,14 +65,13 @@ export function BrushSettings() {
   }
 
   function handleAddBrushColor(color: string) {
-    if (!colors) {
+    if (brushColors.length === 0) {
       localStorage.setItem("brush-colors", `["${color}"]`);
       brushColors.push(color);
       setBrushColors([...brushColors]);
     } else {
-      const brushes = JSON.parse(colors);
-      brushes.push(color);
-      const uniqueBrushes = new Set(brushes);
+      brushColors.push(color);
+      const uniqueBrushes = new Set(brushColors);
 
       const formatted = JSON.stringify([...uniqueBrushes]);
       localStorage.setItem("brush-colors", formatted);
@@ -96,12 +84,9 @@ export function BrushSettings() {
   }
 
   function handleRemoveBrushColor(color: string) {
-    if (!colors) return;
+    brushColors.push(color);
 
-    const brushes = JSON.parse(colors);
-    brushes.push(color);
-
-    const uniqueBrushes = new Set(brushes);
+    const uniqueBrushes = new Set(brushColors);
     uniqueBrushes.delete(brushColor);
 
     const formatted = JSON.stringify([...uniqueBrushes]);
@@ -109,8 +94,27 @@ export function BrushSettings() {
 
     const formattedArray = JSON.parse(formatted);
     setBrushColors(formattedArray);
-    setBrushColor(formattedArray[formattedArray.length - 1]);
+
+    const newBrushColor = formattedArray[formattedArray.length - 1];
+    setBrushColor(newBrushColor);
+    localStorage.setItem("brush-color", newBrushColor);
   }
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("key", "value");
+      const initialColorCode = localStorage.getItem("color-code") as ColorCode;
+      setColorCode(initialColorCode);
+
+      const colors = localStorage.getItem("brush-colors");
+
+      if (!colors) {
+        setBrushColors([]);
+      } else {
+        setBrushColors(JSON.parse(colors));
+      }
+    }
+  }, []);
 
   return (
     <div className="flex flex-col gap-4">
