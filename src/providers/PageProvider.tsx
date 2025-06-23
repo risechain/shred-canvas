@@ -82,7 +82,7 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
     "batch"
   );
 
-  const [brushColor, setBrushColor] = useState("#1856bf");
+  const [brushColor, setBrushColor] = useState("");
   const [brushSize, setBrushSize] = useState(5);
   const [rgbValues, setRgbValues] = useState<RgbValues>({
     r: 24,
@@ -93,17 +93,6 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
   const [pendingTx, setPendingTx] = useState(0);
   const [completedTx, setCompletedTx] = useState(0);
   const [batchSize, setBatchSize] = useState(20);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const initialBrushColor =
-        localStorage.getItem("brush-color") || "#1856bf";
-      setBrushColor(initialBrushColor);
-
-      const initialBatchSize = localStorage.getItem("batch-size");
-      setBatchSize(Number(initialBatchSize));
-    }
-  }, []);
 
   const providerValue = useMemo(() => {
     return {
@@ -145,6 +134,14 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
     completedTx,
     batchSize,
   ]);
+
+  useEffect(() => {
+    const initialBrushColor = localStorage.getItem("brush-color") ?? "#1856bf";
+    const initialBatchSize = localStorage.getItem("batch-size");
+
+    setBrushColor(initialBrushColor);
+    setBatchSize(Number(initialBatchSize));
+  }, []);
 
   return (
     <PageContext.Provider value={providerValue}>

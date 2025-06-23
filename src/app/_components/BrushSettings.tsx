@@ -80,6 +80,7 @@ export function BrushSettings() {
       setBrushColors(formattedArray);
     }
 
+    localStorage.setItem("brush-color", color);
     setBrushColor(color);
   }
 
@@ -101,18 +102,14 @@ export function BrushSettings() {
   }
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("key", "value");
-      const initialColorCode = localStorage.getItem("color-code") as ColorCode;
-      setColorCode(initialColorCode);
+    const initialColorCode = localStorage.getItem("color-code") as ColorCode;
+    setColorCode(initialColorCode);
 
-      const colors = localStorage.getItem("brush-colors");
-
-      if (!colors) {
-        setBrushColors([]);
-      } else {
-        setBrushColors(JSON.parse(colors));
-      }
+    const colors = localStorage.getItem("brush-colors");
+    if (!colors) {
+      setBrushColors([]);
+    } else {
+      setBrushColors(JSON.parse(colors));
     }
   }, []);
 
