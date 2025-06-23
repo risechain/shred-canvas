@@ -102,7 +102,8 @@ export function BrushSettings() {
   }
 
   useEffect(() => {
-    const initialColorCode = localStorage.getItem("color-code") as ColorCode;
+    const initialColorCode = (localStorage.getItem("color-code") ??
+      "HEX") as ColorCode;
     setColorCode(initialColorCode);
 
     const colors = localStorage.getItem("brush-colors");
