@@ -137,7 +137,7 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     const initialBrushColor = localStorage.getItem("brush-color") ?? "#1856bf";
-    const initialBatchSize = localStorage.getItem("batch-size");
+    const initialBatchSize = localStorage.getItem("batch-size") ?? 20;
 
     setBrushColor(initialBrushColor);
     setBatchSize(Number(initialBatchSize));
