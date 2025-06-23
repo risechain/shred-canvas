@@ -135,11 +135,6 @@ export function BrushSettings() {
             className="flex-1 min-w-0 accent-blue-500"
           />
         </div>
-        <input
-          value={`RGB (${rgbValues.r}, ${rgbValues.g}, ${rgbValues.b})`}
-          readOnly // TODO:fix this
-          className="py-2 px-4 bg-accent rounded-md w-full mt-2"
-        />
       </div>
     </div>
   );

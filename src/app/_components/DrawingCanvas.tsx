@@ -5,7 +5,7 @@ import { usePage } from "@/hooks/usePage";
 import { cn } from "@/lib/utils";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { HashLoader } from "react-spinners";
-import { formatEther } from "viem";
+import { formatEther, parseAbiItem } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { useBalance, useReadContract } from "wagmi";
 import canvasAbi from "../../../abi/canvasAbi.json";
@@ -63,7 +63,17 @@ export function DrawingCanvas() {
 
   const { showModal } = useModal();
 
-  const { wallet, getStoredWallet, generateWalletClient } = useWallet();
+  const { wallet, getStoredWallet, generateWalletClient, shredClient } =
+    useWallet();
+
+  shredClient.watchShredEvent({
+    event: parseAbiItem(
+      "event tilesPainted(uint256[] indices, uint8 r, uint8 g, uint8 b)"
+    ),
+    onLogs: (logs) => {
+      console.log("logs:: ", logs[0]);
+    },
+  });
 
   const balance = useBalance({
     address: wallet.account.address,
@@ -140,11 +150,43 @@ export function DrawingCanvas() {
     console.log("==============================================");
   };
 
+  const getCoordinates = (
+    canvas: HTMLCanvasElement,
+    nativeEvent: MouseEvent
+  ) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const x = Math.floor((nativeEvent.x - rect.left) * scaleX);
+    const y = Math.floor((nativeEvent.y - rect.top) * scaleY);
+
+    return { x, y };
+  };
+
   const startDrawing = ({
     nativeEvent,
   }: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
+
     if (!canvas) return;
+    const { x, y } = getCoordinates(canvas, nativeEvent);
+
+    if (!contextRef.current) return;
+    contextRef.current.beginPath();
+    contextRef.current.moveTo(x, y);
+
+    setTxQueue((prev) => [
+      ...prev,
+      {
+        x,
+        y,
+        r: rgbValues.r,
+        g: rgbValues.g,
+        b: rgbValues.b,
+      },
+    ]);
+
     setIsDrawing(true);
   };
 
@@ -164,12 +206,7 @@ export function DrawingCanvas() {
     const canvas = canvasRef.current;
 
     if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    const x = Math.floor((nativeEvent.x - rect.left) * scaleX);
-    const y = Math.floor((nativeEvent.y - rect.top) * scaleY);
+    const { x, y } = getCoordinates(canvas, nativeEvent);
 
     // Do not remove this -- this will prevent from adding duplicating coordinates in txQueue
     if (lastTx.x === x && lastTx.y === y) return;
