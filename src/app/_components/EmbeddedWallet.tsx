@@ -166,6 +166,7 @@ export function EmbeddedWalletContent() {
                   const value = Number(event.target.value);
                   if (value > 1000) return;
                   setBatchSize(value);
+                  localStorage.setItem("batch-size", value.toString());
                 }}
                 className="flex-1 border border-border-primary rounded"
               />

@@ -49,7 +49,7 @@ export function NavigationBar() {
             onClick={() => {
               showModal({
                 isSheet: true,
-                contentProps: { className: "max-md:max-h-[85vh]" },
+                contentProps: { className: "bg-sidebar max-md:max-h-[85vh]" },
                 side: isMobile ? "bottom" : "left",
                 content: <BrushSettings />,
               });

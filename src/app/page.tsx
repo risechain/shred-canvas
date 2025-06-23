@@ -29,8 +29,8 @@ export function Settings() {
   return (
     <ResizablePanel
       className="p-4 flex flex-col gap-4 bg-accent/50 max-lg:hidden"
-      defaultSize={15}
-      minSize={10}
+      defaultSize={20}
+      minSize={15}
       maxSize={25}
     >
       <BrushSettings />

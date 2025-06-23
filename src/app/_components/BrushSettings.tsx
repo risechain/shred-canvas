@@ -10,7 +10,7 @@ import {
 import { usePage } from "@/hooks/usePage";
 import { PRESET_COLORS } from "@/lib/constants";
 import { handleCopy } from "@/lib/utils";
-import { CopyIcon } from "lucide-react";
+import { CopyIcon, MinusIcon, PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { HexColorInput, HexColorPicker } from "react-colorful";
 
@@ -21,8 +21,18 @@ export function BrushSettings() {
     usePage();
 
   const initialColorCode = localStorage.getItem("color-code") as ColorCode;
+  const colors = localStorage.getItem("brush-colors");
 
+  const [brushColors, setBrushColors] = useState<string[]>(savedColors());
   const [colorCode, setColorCode] = useState<ColorCode>(initialColorCode);
+
+  function savedColors() {
+    if (!colors) {
+      return [];
+    } else {
+      return JSON.parse(colors);
+    }
+  }
 
   function convertHexToRgb(hex: string) {
     const r = parseInt(hex.slice(1, 3), 16);
@@ -54,6 +64,7 @@ export function BrushSettings() {
 
   function handleHexChange(hex: string) {
     setBrushColor(hex);
+    localStorage.setItem("brush-color", hex);
 
     // convert hex to rgb
     convertHexToRgb(hex);
@@ -62,6 +73,43 @@ export function BrushSettings() {
   function handleSelectColorCode(code: ColorCode) {
     setColorCode(code);
     localStorage.setItem("color-code", code);
+  }
+
+  function handleAddBrushColor(color: string) {
+    if (!colors) {
+      localStorage.setItem("brush-colors", `["${color}"]`);
+      brushColors.push(color);
+      setBrushColors([...brushColors]);
+    } else {
+      const brushes = JSON.parse(colors);
+      brushes.push(color);
+      const uniqueBrushes = new Set(brushes);
+
+      const formatted = JSON.stringify([...uniqueBrushes]);
+      localStorage.setItem("brush-colors", formatted);
+
+      const formattedArray = JSON.parse(formatted);
+      setBrushColors(formattedArray);
+    }
+
+    setBrushColor(color);
+  }
+
+  function handleRemoveBrushColor(color: string) {
+    if (!colors) return;
+
+    const brushes = JSON.parse(colors);
+    brushes.push(color);
+
+    const uniqueBrushes = new Set(brushes);
+    uniqueBrushes.delete(brushColor);
+
+    const formatted = JSON.stringify([...uniqueBrushes]);
+    localStorage.setItem("brush-colors", formatted);
+
+    const formattedArray = JSON.parse(formatted);
+    setBrushColors(formattedArray);
+    setBrushColor(formattedArray[formattedArray.length - 1]);
   }
 
   return (
@@ -92,24 +140,69 @@ export function BrushSettings() {
 
       <Separator />
 
-      <div className="flex flex-wrap gap-2 bg-accent items-center justify-center p-2 rounded-md">
+      <div className="bg-accent items-center justify-center p-3 space-y-3 rounded-md">
         <HexColorPicker
           color={brushColor}
           onChange={handleHexChange}
           style={{ width: "100%", height: "280px" }}
         />
-        {PRESET_COLORS.map((presetColor) => {
-          return (
+        <div className="flex flex-wrap gap-1">
+          {PRESET_COLORS.map((presetColor) => {
+            return (
+              <Button
+                data-selected={presetColor === brushColor}
+                variant="ghost"
+                key={presetColor}
+                className="rounded border border-foreground/15 w-6 h-6 p-0 hover:scale-125 transition-all data-[selected=true]:border-foreground/50 data-[selected=true]:mx-1 data-[selected=true]:scale-125"
+                style={{ backgroundColor: presetColor }}
+                onClick={() => handleHexChange(presetColor)}
+              />
+            );
+          })}
+        </div>
+
+        <Separator />
+
+        <div className="flex flex-wrap gap-1 justify-between">
+          {brushColors.length !== 0 && (
+            <div className="flex gap-1">
+              {brushColors.map((presetColor) => {
+                return (
+                  <Button
+                    key={presetColor}
+                    variant="ghost"
+                    data-selected={presetColor === brushColor}
+                    className="rounded border border-foreground/25 w-6 h-6 p-0 hover:scale-125 transition-all data-[selected=true]:border-foreground/50 data-[selected=true]:mx-1 data-[selected=true]:scale-125"
+                    style={{ backgroundColor: presetColor }}
+                    onClick={() => handleHexChange(presetColor)}
+                  />
+                );
+              })}
+            </div>
+          )}
+          <div className="flex">
             <Button
-              data-selected={presetColor === brushColor}
-              variant="ghost"
-              key={presetColor}
-              className="rounded border border-border-accent/25 w-6 h-6 p-0 hover:scale-125 transition-all data-[selected=true]:border-foreground data-[selected=true]:scale-125"
-              style={{ backgroundColor: presetColor }}
-              onClick={() => handleHexChange(presetColor)}
-            />
-          );
-        })}
+              disabled={brushColors.length >= 10}
+              variant="secondary"
+              className="rounded-r w-6 h-6 p-0"
+              onClick={() => handleAddBrushColor(brushColor)}
+            >
+              <PlusIcon />
+            </Button>
+            {brushColors.length !== 0 && (
+              <>
+                <Separator orientation="vertical" />
+                <Button
+                  variant="secondary"
+                  className="rounded-l w-6 h-6 p-0"
+                  onClick={() => handleRemoveBrushColor(brushColor)}
+                >
+                  <MinusIcon />
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="flex flex-wrap">
@@ -180,7 +273,7 @@ export function BrushSettings() {
             handleCopy(value);
           }}
         >
-          <CopyIcon />
+          <CopyIcon color="white" />
         </Button>
       </div>
 
