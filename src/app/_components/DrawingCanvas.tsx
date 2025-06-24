@@ -71,7 +71,7 @@ export function DrawingCanvas() {
       "event tilesPainted(uint256[] indices, uint8 r, uint8 g, uint8 b)"
     ),
     onLogs: (logs) => {
-      console.log("logs:: ", logs[0]);
+      onRealTimeUpdate(logs[0]?.args);
     },
   });
 
@@ -91,12 +91,54 @@ export function DrawingCanvas() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getStoredWallet()?.privateKey]);
 
+  function onRealTimeUpdate(props?: {
+    indices?: readonly bigint[];
+    r?: number;
+    g?: number;
+    b?: number;
+  }) {
+    props?.indices?.forEach((index) => {
+      const coordinate = getCoordinatesFromIndex(Number(index));
+      sentTransactions.transactions.push({
+        x: coordinate?.x ?? 0,
+        y: coordinate?.y ?? 0,
+        r: props.r ?? 0,
+        g: props.g ?? 0,
+        b: props.b ?? 0,
+      });
+
+      setSentTransactions({ ...sentTransactions });
+    });
+  }
+
+  function getCoordinatesFromIndex(index: number) {
+    const canvas = canvasRef.current;
+
+    if (!canvas) return;
+    const width = canvas.width;
+
+    const y = index % width;
+    const x = Math.floor(index / width);
+    return { x, y };
+  }
+
+  function getCoordinates(canvas: HTMLCanvasElement, nativeEvent: MouseEvent) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const x = Math.floor((nativeEvent.x - rect.left) * scaleX);
+    const y = Math.floor((nativeEvent.y - rect.top) * scaleY);
+
+    return { x, y };
+  }
+
   /**
    * Process transaction individually
    * 1. Send transaction onStopDrawing
    * 2. each stop will be in one batch
    */
-  const processTx = async () => {
+  async function processTx() {
     if (isTxProcessing || !client || txQueue.length === 0) return;
     if (processingType === "batch" && txQueue.length < batchSize) return;
 
@@ -148,25 +190,9 @@ export function DrawingCanvas() {
     }
 
     console.log("==============================================");
-  };
+  }
 
-  const getCoordinates = (
-    canvas: HTMLCanvasElement,
-    nativeEvent: MouseEvent
-  ) => {
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    const x = Math.floor((nativeEvent.x - rect.left) * scaleX);
-    const y = Math.floor((nativeEvent.y - rect.top) * scaleY);
-
-    return { x, y };
-  };
-
-  const startDrawing = ({
-    nativeEvent,
-  }: React.MouseEvent<HTMLCanvasElement>) => {
+  function startDrawing({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current;
 
     if (!canvas) return;
@@ -188,9 +214,9 @@ export function DrawingCanvas() {
     ]);
 
     setIsDrawing(true);
-  };
+  }
 
-  const stopDrawing = async () => {
+  async function stopDrawing() {
     if (!contextRef.current) return;
     contextRef.current.closePath();
     setIsDrawing(false);
@@ -198,9 +224,9 @@ export function DrawingCanvas() {
     if (processingType === "individual") {
       await processTx();
     }
-  };
+  }
 
-  const draw = ({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) => {
+  function draw({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) {
     if (!isDrawing) return;
 
     const canvas = canvasRef.current;
@@ -229,9 +255,9 @@ export function DrawingCanvas() {
         b: rgbValues.b,
       },
     ]);
-  };
+  }
 
-  const touchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+  function touchStart(e: React.TouchEvent<HTMLCanvasElement>) {
     e.preventDefault();
     const touch = e.touches[0];
     const canvas = canvasRef.current;
@@ -248,9 +274,9 @@ export function DrawingCanvas() {
     contextRef.current.beginPath();
     contextRef.current.moveTo(x, y);
     setIsDrawing(true);
-  };
+  }
 
-  const touchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+  function touchMove(e: React.TouchEvent<HTMLCanvasElement>) {
     if (!isDrawing) return;
     e.preventDefault();
 
@@ -276,13 +302,13 @@ export function DrawingCanvas() {
         b: rgbValues.b,
       },
     ]);
-  };
+  }
 
-  const coordToBufferIndex = (x: number, y: number) => {
+  function coordToBufferIndex(x: number, y: number) {
     return Math.floor(y) * canvasSize + Math.floor(x);
-  };
+  }
 
-  const renderCanvas = () => {
+  function renderCanvas() {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
@@ -334,23 +360,7 @@ export function DrawingCanvas() {
     // Update the canvas
     context.fill();
     context.putImageData(imageData, 0, 0);
-  };
-
-  // New effect to cleanup old sent transactions after 2 seconds
-  // useEffect(() => {
-  //   if (sentTransactions.length === 0) return;
-
-  //   const cleanupInterval = setInterval(() => {
-  //     const now = Date.now();
-
-  //     // Remove transactions older than 5 seconds
-  //     setSentTransactions((prev) =>
-  //       prev.filter((tx) => now - tx.sentTime < 7500)
-  //     );
-  //   }, 250); // Check every 250ms
-
-  //   return () => clearInterval(cleanupInterval);
-  // }, [sentTransactions]);
+  }
 
   // Effect to render canvas whenever any of the layers change
   useEffect(() => {
