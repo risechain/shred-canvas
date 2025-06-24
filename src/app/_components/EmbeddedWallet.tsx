@@ -4,6 +4,8 @@ import {
   CollapsibleContent,
   Input,
   Separator,
+  ToggleGroup,
+  ToggleGroupItem,
 } from "@/components/ui";
 import { useWallet } from "@/hooks/contract/useWallet";
 import { usePage } from "@/hooks/usePage";
@@ -17,8 +19,14 @@ import { useBalance, useTransactionCount } from "wagmi";
 export function EmbeddedWalletContent() {
   const { setIsResetting, resetWalletClient, wallet, getStoredWallet } =
     useWallet();
-  const { processingType, pendingTx, completedTx, batchSize, setBatchSize } =
-    usePage();
+  const {
+    processingType,
+    pendingTx,
+    completedTx,
+    batchSize,
+    setBatchSize,
+    setProcessingType,
+  } = usePage();
 
   const balance = useBalance({
     address: wallet.account.address,
@@ -147,7 +155,28 @@ export function EmbeddedWalletContent() {
           <p className="text-sm md:text-md text-text-secondary">
             Processing Option:
           </p>
-          <p className="text-sm md:text-md">Batch</p>
+          {/* <p className="text-sm md:text-md">Batch</p> */}
+
+          <ToggleGroup type="single" value={processingType}>
+            <ToggleGroupItem
+              value="individual"
+              className="px-4"
+              onClick={() => {
+                setProcessingType("individual");
+              }}
+            >
+              Individual
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="batch"
+              className="px-4"
+              onClick={() => {
+                setProcessingType("batch");
+              }}
+            >
+              By Batch
+            </ToggleGroupItem>
+          </ToggleGroup>
         </div>
 
         <Separator />
