@@ -64,7 +64,16 @@ export function DrawingCanvas() {
 
   // Initialize nonce manager
   const { getNextNonce, resetNonce, isInitialized: nonceInitialized } = 
-    useNonceManager(wallet.account?.address, shredClient);
+    useNonceManager(wallet.account?.address, publicClient);
+
+  // Log nonce initialization status
+  useEffect(() => {
+    console.log('Nonce manager status:', {
+      address: wallet.account?.address,
+      nonceInitialized,
+      publicClientAvailable: !!publicClient
+    });
+  }, [wallet.account?.address, nonceInitialized, publicClient]);
 
   const tiles = useReadContract({
     abi: canvasAbi,
