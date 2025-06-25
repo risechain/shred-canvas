@@ -10,9 +10,11 @@ import { HashLoader } from "react-spinners";
 import { encodeFunctionData, formatEther, parseAbiItem } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { useBalance, useReadContract } from "wagmi";
+import { toast } from "sonner";
 import canvasAbi from "../../../abi/canvasAbi.json";
 import { FundWallet } from "./FundWallet";
 import { riseTestnet } from "viem/chains";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 type PixelWithTimestamp = TransactionQueue & {
   timestamp: number;
@@ -58,6 +60,8 @@ export function DrawingCanvas() {
 
   const { wallet, getStoredWallet, generateWalletClient, shredClient, syncClient, publicClient, account } =
     useWallet();
+  
+  const isMobile = useIsMobile();
 
 
   // Initialize nonce manager
@@ -244,6 +248,60 @@ export function DrawingCanvas() {
         b: props.b ?? 0,
       };
     });
+
+    // Show transaction complete toast (only on desktop)
+    if (!isMobile) {
+      const pixelCount = props.indices.length;
+      toast.custom((t) => (
+        <div
+          className="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg"
+          style={{
+            backgroundColor: 'var(--purple-10)',
+            color: 'var(--purple-contrast)',
+          }}
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 20 20"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M10 2.5L12.5 7.5L17.5 8.5L14 12L15 17.5L10 15L5 17.5L6 12L2.5 8.5L7.5 7.5L10 2.5Z"
+              fill="currentColor"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span className="font-medium">
+            Transaction complete! {pixelCount} pixel{pixelCount > 1 ? 's' : ''} painted
+          </span>
+          <button
+            onClick={() => toast.dismiss(t)}
+            className="ml-auto text-current opacity-70 hover:opacity-100 transition-opacity"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 4L4 12M4 4L12 12"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        </div>
+      ), {
+        duration: 3000,
+      });
+    }
 
     // Immediately update Buffer 2 (source of truth)
     setBlockchainPixels(prev => {
@@ -612,7 +670,7 @@ export function DrawingCanvas() {
   return (
     <div
       className={cn(
-        "relative flex-1 flex flex-col gap-2 py-3 items-center justify-center h-full w-full bg-foreground/75 dark:bg-accent/35"
+        "relative flex-1 flex flex-col gap-2 py-3 items-center justify-center h-full w-full bg-purple-2/20 dark:bg-accent/35"
       )}
     >
       <HashLoader
@@ -630,7 +688,7 @@ export function DrawingCanvas() {
         onTouchStart={touchStart}
         onTouchMove={touchMove}
         onTouchEnd={stopDrawing}
-        className="border border-border-primary cursor-crosshair touch-none aspect-square w-full max-w-[820px] max-h-[820px]"
+        className="cursor-crosshair touch-none aspect-square w-full max-w-[820px] max-h-[820px] rounded-lg shadow-md dark:shadow-white bg-white dark:bg-gray-2"
         style={{
           imageRendering: "pixelated",
         }}

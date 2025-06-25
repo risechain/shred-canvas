@@ -1,7 +1,7 @@
 import { DynamicFavicon } from "@/components/DynamicFavicon";
 import { Modal } from "@/components/Modal";
 import { AppProvider } from "@/providers";
-import { ToastContainer } from "react-toastify";
+import { Toaster } from "sonner";
 
 import clsx from "clsx";
 import type { Metadata } from "next";
@@ -53,7 +53,13 @@ export default function RootLayout({
         <AppProvider>
           <DynamicFavicon />
           <Modal />
-          <ToastContainer theme="colored" icon={false} />
+          <Toaster 
+            position="bottom-left" 
+            visibleToasts={3} 
+            expand={false}
+            richColors
+            closeButton
+          />
           <main className="mx-auto max-w-10xl w-full h-auto relative min-h-vh">
             <div className="bg-background p-3 rounded-md1 h-full rounded-md">
               <NavigationBar />
