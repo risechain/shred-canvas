@@ -206,6 +206,13 @@ export function DrawingCanvas() {
     }
   ) {
     if (!props?.indices) return;
+    
+    console.log('Real-time update received:', {
+      blockNumber,
+      indices: props.indices,
+      color: { r: props.r, g: props.g, b: props.b }
+    });
+
     const txList = props?.indices?.map((index) => {
       const coordinate = getCoordinatesFromIndex(Number(index));
 
@@ -218,8 +225,21 @@ export function DrawingCanvas() {
       };
     });
 
-    realTimeTx.set(blockNumber, txList);
-    setRealTimeTx(realTimeTx);
+    console.log('Processed pixels from real-time update:', txList);
+
+    // Append new transactions to the existing array
+    setRealTimeTx(prev => {
+      const updated = [...prev, ...txList];
+      console.log('Total real-time transactions:', updated.length);
+      return updated;
+    });
+    
+    // Remove corresponding pixels from user queue to prevent conflicts
+    setTxQueue(prev => prev.filter(userPixel => 
+      !txList.some(realTimePixel => 
+        realTimePixel.x === userPixel.x && realTimePixel.y === userPixel.y
+      )
+    ));
   }
 
   function getCoordinatesFromIndex(index: number) {
@@ -430,11 +450,7 @@ export function DrawingCanvas() {
     loopThruPixels(data, sentTransactions.transactions);
 
     // Apply real time updates
-    realTimeTx.entries().forEach((item) => {
-      // if (item[0] > (sentTransactions.blockNumber ?? 0)) {
-      // }
-      loopThruPixels(data, item[1]);
-    });
+    loopThruPixels(data, realTimeTx);
 
     // Apply pending transactions overlay (highest priority)
     loopThruPixels(data, txQueue);
@@ -450,7 +466,7 @@ export function DrawingCanvas() {
     setCompletedTx(sentTransactions.transactions.length);
     setPendingTx(txQueue.length);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tiles.data, txQueue, sentTransactions, blockNumber.size]);
+  }, [tiles.data, txQueue, sentTransactions, realTimeTx]);
 
   // On initial load of the canvas
   useEffect(() => {
