@@ -3,6 +3,7 @@ import { useWallet } from "@/hooks/contract/useWallet";
 import { useModal } from "@/hooks/useModal";
 import { usePage } from "@/hooks/usePage";
 import { cn } from "@/lib/utils";
+import { TransactionQueue } from "@/providers/PageProvider";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { HashLoader } from "react-spinners";
 import { formatEther, parseAbiItem } from "viem";
@@ -10,7 +11,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { useBalance, useReadContract } from "wagmi";
 import canvasAbi from "../../../abi/canvasAbi.json";
 import { FundWallet } from "./FundWallet";
-import { TransactionQueue } from "@/providers/PageProvider";
+import { throttle } from "lodash";
 
 type Transaction = {
   sentTime?: number;
@@ -48,7 +49,15 @@ export function DrawingCanvas() {
     setPendingTx,
     isTxProcessing,
     setIsTxProcessing,
+    batchSize,
+    realTimeTx,
+    setRealTimeTx,
   } = usePage();
+
+  const { showModal } = useModal();
+
+  const { wallet, getStoredWallet, generateWalletClient, shredClient } =
+    useWallet();
 
   const tiles = useReadContract({
     abi: canvasAbi,
@@ -56,16 +65,9 @@ export function DrawingCanvas() {
     functionName: "getTiles",
   });
 
-  const { showModal } = useModal();
-
-  const { wallet, getStoredWallet, generateWalletClient, shredClient } =
-    useWallet();
-
   const balance = useBalance({
     address: wallet.account.address,
   });
-
-  const { batchSize, realTimeTx, setRealTimeTx } = usePage();
 
   shredClient.watchShredEvent({
     event: parseAbiItem(
@@ -89,6 +91,8 @@ export function DrawingCanvas() {
     return client;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getStoredWallet()?.privateKey]);
+
+  const throttledTx = throttle(processTx, 200);
 
   function onRealTimeUpdate(
     blockNumber: number,
@@ -138,21 +142,12 @@ export function DrawingCanvas() {
     return { x, y };
   }
 
-  /**
-   * Process transaction individually
-   * 1. Send transaction onStopDrawing
-   * 2. each stop will be in one batch
-   */
   async function processTx() {
+    console.log("txQueue:: ", txQueue);
     if (isTxProcessing || !client || txQueue.length === 0) return;
-    if (processingType === "batch" && txQueue.length < batchSize) return;
-
-    let queue = [...txQueue];
-    if (processingType === "batch") {
-      queue = [...txQueue.slice(0, batchSize)];
-    }
 
     setIsTxProcessing(true);
+    const queue = [...txQueue];
 
     const { r, g, b } = txQueue[0];
 
@@ -186,13 +181,7 @@ export function DrawingCanvas() {
       }
     }
 
-    // clear the loading state when there is no pending transaction
-    if (
-      (processingType === "batch" && batchSize <= txQueue.length) ||
-      processingType === "individual"
-    ) {
-      setIsTxProcessing(false);
-    }
+    setIsTxProcessing(false);
 
     console.log("==============================================");
   }
@@ -217,7 +206,6 @@ export function DrawingCanvas() {
         b: rgbValues.b,
       },
     ]);
-
     setIsDrawing(true);
   }
 
@@ -225,30 +213,20 @@ export function DrawingCanvas() {
     if (!contextRef.current) return;
     contextRef.current.closePath();
     setIsDrawing(false);
-    // console.log("stop:: ", txQueue);
-    if (processingType === "individual") {
-      await processTx();
-    }
+    await processTx();
+    // throttledTx.cancel();
   }
 
-  function draw({
-    nativeEvent,
-    clientX,
-    clientY,
-  }: React.MouseEvent<HTMLCanvasElement>) {
+  function draw({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) {
     if (!isDrawing) return;
+    throttledTx();
 
     const canvas = canvasRef.current;
 
     if (!canvas) return;
     const { x, y } = getCoordinates(canvas, nativeEvent);
-
     // Do not remove this -- this will prevent from adding duplicating coordinates in txQueue
     if (lastTx.x === x && lastTx.y === y) return;
-
-    console.log("x, y:: ", x, y);
-    console.log("lastTx:: ", lastTx.x, lastTx.y);
-    console.log("===============");
 
     setLastTx({
       x,
@@ -387,13 +365,6 @@ export function DrawingCanvas() {
     setPendingTx(txQueue.length);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tiles.data, txQueue, sentTransactions, blockNumber.size]);
-
-  useEffect(() => {
-    if (processingType === "batch" && batchSize <= txQueue.length) {
-      processTx();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [batchSize, processingType, txQueue]);
 
   // On initial load of the canvas
   useEffect(() => {
