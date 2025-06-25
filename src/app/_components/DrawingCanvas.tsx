@@ -349,9 +349,9 @@ export function DrawingCanvas() {
 
     // Apply real time updates
     realTimeTx.entries().forEach((item) => {
-      if (item[0] > (sentTransactions.blockNumber ?? 0)) {
-        loopThruPixels(data, item[1]);
-      }
+      // if (item[0] > (sentTransactions.blockNumber ?? 0)) {
+      // }
+      loopThruPixels(data, item[1]);
     });
 
     // Apply pending transactions overlay (highest priority)
