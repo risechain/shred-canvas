@@ -14,36 +14,36 @@ import canvasAbi from "../../../abi/canvasAbi.json";
 import { FundWallet } from "./FundWallet";
 import { riseTestnet } from "viem/chains";
 
-type Transaction = {
-  blockNumber?: number;
-  transactions: TransactionQueue[];
+type PixelWithTimestamp = TransactionQueue & {
+  timestamp: number;
+  opacity: number;
 };
 
 const CONTRACT_ADDRESS = "0xF8557708e908CBbBD3DB3581135844d49d61E2a8";
+const USER_PIXEL_FADE_DURATION = 3000; // 3 seconds
 
 export function DrawingCanvas() {
   const canvasSize = 64;
   const gasAllowanceRqmt = 0.000000008;
 
+  // Canvas refs for double buffering
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
+  const buffer1Ref = useRef<HTMLCanvasElement | null>(null); // User overlay
+  const buffer2Ref = useRef<HTMLCanvasElement | null>(null); // Source of truth
 
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
-  const [txQueue, setTxQueue] = useState<TransactionQueue[]>([]);
+  const [userPixels, setUserPixels] = useState<PixelWithTimestamp[]>([]); // Buffer 1 data
+  const [blockchainPixels, setBlockchainPixels] = useState<TransactionQueue[]>([]); // Buffer 2 data
   const [lastTx, setLastTx] = useState<Partial<TransactionQueue>>({
     x: 0,
     y: 0,
   });
-  const [sentTransactions, setSentTransactions] = useState<Transaction>({
-    transactions: [],
-  });
-
-  const uniqueBlocks = new Set<number>();
-  const [blockNumber, setBlockNumber] = useState(uniqueBlocks);
 
   // Concurrent transaction system
   const batchIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const currentBatchRef = useRef<TransactionQueue[]>([]);
+  const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const BATCH_TIMEOUT_MS = 100;
 
   const {
@@ -52,8 +52,6 @@ export function DrawingCanvas() {
     rgbValues,
     setCompletedTx,
     setPendingTx,
-    realTimeTx,
-    setRealTimeTx,
   } = usePage();
 
   const { showModal } = useModal();
@@ -86,18 +84,25 @@ export function DrawingCanvas() {
     address: wallet.account.address,
   });
 
-  shredClient.watchShredEvent({
-    event: parseAbiItem(
-      "event tilesPainted(uint256[] indices, uint8 r, uint8 g, uint8 b)"
-    ),
-    onLogs: (logs) => {
-      const blockNumber = Number(logs[0]?.blockNumber);
-      uniqueBlocks.add(blockNumber);
-      setBlockNumber(uniqueBlocks);
+  // Set up blockchain event listener once
+  useEffect(() => {
+    const unwatch = shredClient.watchShredEvent({
+      event: parseAbiItem(
+        "event tilesPainted(uint256[] indices, uint8 r, uint8 g, uint8 b)"
+      ),
+      onLogs: (logs) => {
+        onBlockchainUpdate(logs[0]?.args);
+      },
+    });
 
-      onRealTimeUpdate(blockNumber, logs[0]?.args);
-    },
-  });
+    // Cleanup function to stop watching when component unmounts
+    return () => {
+      if (typeof unwatch === 'function') {
+        unwatch();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array ensures this runs only once
 
   const client = useMemo(() => {
     if (!getStoredWallet()?.privateKey) return;
@@ -127,6 +132,10 @@ export function DrawingCanvas() {
         args: [tileIndices, r, g, b],
       });
 
+      if (!account) {
+        throw new Error('Account not available');
+      }
+
       const serializedTransaction = await account.signTransaction({
         to: CONTRACT_ADDRESS,
         data,
@@ -140,19 +149,11 @@ export function DrawingCanvas() {
       // Send transaction concurrently (don't await receipt)
       syncClient.sendRawTransactionSync({
         serializedTransaction,
-      }).then((receipt) => {
+      }).then((_receipt) => {
         console.log(`Batch completed with ${pixels.length} pixels`);
         
-        // Remove confirmed pixels from visual queue
-        setTxQueue(prev => prev.filter(px => 
-          !pixels.some(batchPx => batchPx.x === px.x && batchPx.y === px.y)
-        ));
-        
-        // Update sent transactions
-        setSentTransactions(prev => ({
-          blockNumber: Number(receipt.blockNumber),
-          transactions: [...prev.transactions, ...pixels],
-        }));
+        // Remove confirmed pixels from user overlay (they'll appear via blockchain events)
+        removeUserPixels(pixels);
       }).catch((error) => {
         console.error("Batch transaction error:", error);
         
@@ -178,7 +179,7 @@ export function DrawingCanvas() {
       const batch = [...currentBatchRef.current];
       currentBatchRef.current = [];
       
-      // Send batch - pixels stay in txQueue until transaction confirms
+      // Send batch - pixels stay in user overlay until transaction confirms
       sendBatch(batch);
     }
   };
@@ -196,26 +197,45 @@ export function DrawingCanvas() {
     }
   };
 
-  function onRealTimeUpdate(
-    blockNumber: number,
-    props?: {
-      indices?: readonly bigint[];
-      r?: number;
-      g?: number;
-      b?: number;
-    }
-  ) {
+  // Buffer 1 (User Overlay) Management
+  const addUserPixel = (pixel: TransactionQueue) => {
+    const pixelWithTimestamp: PixelWithTimestamp = {
+      ...pixel,
+      timestamp: Date.now(),
+      opacity: 1.0,
+    };
+    
+    setUserPixels(prev => {
+      // Remove any existing pixel at the same coordinate
+      const filtered = prev.filter(p => !(p.x === pixel.x && p.y === pixel.y));
+      return [...filtered, pixelWithTimestamp];
+    });
+  };
+
+  const removeUserPixels = (pixels: TransactionQueue[]) => {
+    setUserPixels(prev => prev.filter(userPixel => 
+      !pixels.some(batchPixel => 
+        batchPixel.x === userPixel.x && batchPixel.y === userPixel.y
+      )
+    ));
+  };
+
+  // Buffer 2 (Source of Truth) Management
+  const onBlockchainUpdate = (props?: {
+    indices?: readonly bigint[];
+    r?: number;
+    g?: number;
+    b?: number;
+  }) => {
     if (!props?.indices) return;
     
-    console.log('Real-time update received:', {
-      blockNumber,
+    console.log('Blockchain update received:', {
       indices: props.indices,
       color: { r: props.r, g: props.g, b: props.b }
     });
 
-    const txList = props?.indices?.map((index) => {
+    const newPixels = props.indices.map((index) => {
       const coordinate = getCoordinatesFromIndex(Number(index));
-
       return {
         x: coordinate?.x ?? 0,
         y: coordinate?.y ?? 0,
@@ -225,22 +245,39 @@ export function DrawingCanvas() {
       };
     });
 
-    console.log('Processed pixels from real-time update:', txList);
-
-    // Append new transactions to the existing array
-    setRealTimeTx(prev => {
-      const updated = [...prev, ...txList];
-      console.log('Total real-time transactions:', updated.length);
+    // Immediately update Buffer 2 (source of truth)
+    setBlockchainPixels(prev => {
+      const updated = [...prev];
+      newPixels.forEach(newPixel => {
+        // Remove any existing pixel at the same coordinate and add new one
+        const index = updated.findIndex(p => p.x === newPixel.x && p.y === newPixel.y);
+        if (index >= 0) {
+          updated[index] = newPixel;
+        } else {
+          updated.push(newPixel);
+        }
+      });
       return updated;
     });
     
-    // Remove corresponding pixels from user queue to prevent conflicts
-    setTxQueue(prev => prev.filter(userPixel => 
-      !txList.some(realTimePixel => 
-        realTimePixel.x === userPixel.x && realTimePixel.y === userPixel.y
-      )
-    ));
-  }
+    // Remove corresponding pixels from user overlay (they're now confirmed)
+    removeUserPixels(newPixels);
+  };
+
+  // Fade user pixels over time
+  const updateUserPixelOpacity = () => {
+    const now = Date.now();
+    setUserPixels(prev => {
+      const updated = prev.map(pixel => {
+        const age = now - pixel.timestamp;
+        const opacity = Math.max(0, 1 - (age / USER_PIXEL_FADE_DURATION));
+        return { ...pixel, opacity };
+      }).filter(pixel => pixel.opacity > 0); // Remove fully faded pixels
+      
+      return updated;
+    });
+  };
+
 
   function getCoordinatesFromIndex(index: number) {
     const canvas = canvasRef.current;
@@ -283,8 +320,8 @@ export function DrawingCanvas() {
       b: rgbValues.b,
     };
 
-    // Add to visual queue
-    setTxQueue(prev => [...prev, pixel]);
+    // Add to user overlay (Buffer 1)
+    addUserPixel(pixel);
     
     // Add to batch for processing
     addPixelToBatch(pixel);
@@ -328,8 +365,8 @@ export function DrawingCanvas() {
 
     setLastTx(pixel);
 
-    // Add to visual queue
-    setTxQueue(prev => [...prev, pixel]);
+    // Add to user overlay (Buffer 1)
+    addUserPixel(pixel);
     
     // Add to batch for processing
     addPixelToBatch(pixel);
@@ -361,8 +398,8 @@ export function DrawingCanvas() {
       b: rgbValues.b,
     };
 
-    // Add to visual queue
-    setTxQueue(prev => [...prev, pixel]);
+    // Add to user overlay (Buffer 1)
+    addUserPixel(pixel);
     
     // Add to batch for processing
     addPixelToBatch(pixel);
@@ -392,8 +429,8 @@ export function DrawingCanvas() {
       b: rgbValues.b,
     };
 
-    // Add to visual queue
-    setTxQueue(prev => [...prev, pixel]);
+    // Add to user overlay (Buffer 1)
+    addUserPixel(pixel);
     
     // Add to batch for processing
     addPixelToBatch(pixel);
@@ -418,16 +455,17 @@ export function DrawingCanvas() {
     });
   }
 
-  function renderCanvas() {
-    if (!canvasRef.current) return;
-    const canvas = canvasRef.current;
+  // Initialize Buffer 2 (source of truth) from blockchain data
+  const initializeBuffer2 = () => {
+    if (!buffer2Ref.current || !tiles.data) return;
+    
+    const canvas = buffer2Ref.current;
     const context = canvas.getContext("2d");
-
     if (!context) return;
+    
     const imageData = context.createImageData(canvasSize, canvasSize);
     const data = imageData.data;
-
-    if (!tiles.data) return;
+    
     const rBuffer = Object.values((tiles.data as number[])[0]);
     const gBuffer = Object.values((tiles.data as number[])[1]);
     const bBuffer = Object.values((tiles.data as number[])[2]);
@@ -444,49 +482,121 @@ export function DrawingCanvas() {
       data[index + 3] = 255; // Alpha
     }
 
-    // console.log("sentTransactions:: ", sentTransactions);
+    // Apply blockchain pixel updates
+    loopThruPixels(data, blockchainPixels);
 
-
-    loopThruPixels(data, sentTransactions.transactions);
-
-    // Apply real time updates
-    loopThruPixels(data, realTimeTx);
-
-    // Apply pending transactions overlay (highest priority)
-    loopThruPixels(data, txQueue);
-
-    // Update the canvas
-    context.fill();
     context.putImageData(imageData, 0, 0);
-  }
+  };
 
-  // Effect to render canvas whenever any of the layers change
+  // Render Buffer 1 (user overlay)
+  const renderBuffer1 = () => {
+    if (!buffer1Ref.current) return;
+    
+    const canvas = buffer1Ref.current;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    
+    // Clear the overlay
+    context.clearRect(0, 0, canvasSize, canvasSize);
+    
+    const imageData = context.createImageData(canvasSize, canvasSize);
+    const data = imageData.data;
+    
+    // Initialize as transparent
+    for (let i = 0; i < data.length; i += 4) {
+      data[i + 3] = 0; // Alpha = 0 (transparent)
+    }
+    
+    // Apply user pixels with fading
+    userPixels.forEach((pixel) => {
+      const index = coordToBufferIndex(pixel.x, pixel.y);
+      const pixelIndex = index * 4;
+      
+      if (pixelIndex >= 0 && pixelIndex < data.length - 3) {
+        data[pixelIndex] = pixel.r; // R
+        data[pixelIndex + 1] = pixel.g; // G
+        data[pixelIndex + 2] = pixel.b; // B
+        data[pixelIndex + 3] = Math.floor(pixel.opacity * 255); // Alpha with fade
+      }
+    });
+    
+    context.putImageData(imageData, 0, 0);
+  };
+
+  // Composite both buffers to main canvas
+  const renderCanvas = () => {
+    if (!canvasRef.current || !buffer1Ref.current || !buffer2Ref.current) return;
+    
+    const mainContext = canvasRef.current.getContext("2d");
+    if (!mainContext) return;
+    
+    // Clear main canvas
+    mainContext.clearRect(0, 0, canvasSize, canvasSize);
+    
+    // Draw Buffer 2 (source of truth) first
+    mainContext.drawImage(buffer2Ref.current, 0, 0);
+    
+    // Draw Buffer 1 (user overlay) on top
+    mainContext.drawImage(buffer1Ref.current, 0, 0);
+  };
+
+  // Initialize buffers when blockchain data is available
+  useEffect(() => {
+    initializeBuffer2();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tiles.data, blockchainPixels]);
+
+  // Update user overlay when user pixels change
+  useEffect(() => {
+    renderBuffer1();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userPixels]);
+
+  // Composite buffers to main canvas
   useEffect(() => {
     renderCanvas();
-    setCompletedTx(sentTransactions.transactions.length);
-    setPendingTx(txQueue.length);
+    setPendingTx(userPixels.length);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tiles.data, txQueue, sentTransactions, realTimeTx]);
+  }, [userPixels, blockchainPixels, tiles.data]);
+
+  // Start fade timer for user pixels
+  useEffect(() => {
+    fadeIntervalRef.current = setInterval(updateUserPixelOpacity, 100);
+    return () => {
+      if (fadeIntervalRef.current) {
+        clearInterval(fadeIntervalRef.current);
+      }
+    };
+  }, []);
 
   // On initial load of the canvas
   useEffect(() => {
     const canvas = canvasRef.current;
-
     if (!canvas) return;
+
+    // Initialize main canvas
     canvas.width = canvasSize;
     canvas.height = canvasSize;
-
     const context = canvas.getContext("2d");
     if (!context) return;
-
     context.lineCap = "round";
     context.lineJoin = "round";
     context.strokeStyle = brushColor;
     context.lineWidth = brushSize;
-
-    context.fillRect(0, 0, canvas.width, canvas.height);
-
     contextRef.current = context;
+
+    // Initialize Buffer 1 (user overlay)
+    const buffer1 = document.createElement('canvas');
+    buffer1.width = canvasSize;
+    buffer1.height = canvasSize;
+    buffer1Ref.current = buffer1;
+
+    // Initialize Buffer 2 (source of truth)
+    const buffer2 = document.createElement('canvas');
+    buffer2.width = canvasSize;
+    buffer2.height = canvasSize;
+    buffer2Ref.current = buffer2;
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -508,7 +618,7 @@ export function DrawingCanvas() {
       <HashLoader
         color="white"
         size={36}
-        loading={txQueue.length > 0 || currentBatchRef.current.length > 0}
+        loading={userPixels.length > 0 || currentBatchRef.current.length > 0}
         style={{ position: "absolute", bottom: 32, right: 32 }}
       />
       <canvas
