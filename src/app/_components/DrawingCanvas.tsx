@@ -2,16 +2,18 @@
 import { useWallet } from "@/hooks/contract/useWallet";
 import { useModal } from "@/hooks/useModal";
 import { usePage } from "@/hooks/usePage";
+import { useNonceManager } from "@/hooks/useNonceManager";
 import { cn } from "@/lib/utils";
 import { TransactionQueue } from "@/providers/PageProvider";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { HashLoader } from "react-spinners";
-import { formatEther, parseAbiItem } from "viem";
+import { encodeFunctionData, formatEther, parseAbiItem } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { useBalance, useReadContract } from "wagmi";
 import canvasAbi from "../../../abi/canvasAbi.json";
 import { FundWallet } from "./FundWallet";
 import { throttle } from "lodash";
+import { riseTestnet } from "viem/chains";
 
 type Transaction = {
   blockNumber?: number;
@@ -54,8 +56,12 @@ export function DrawingCanvas() {
 
   const { showModal } = useModal();
 
-  const { wallet, getStoredWallet, generateWalletClient, shredClient } =
+  const { wallet, getStoredWallet, generateWalletClient, shredClient, syncClient } =
     useWallet();
+
+  // Initialize nonce manager
+  const { getNextNonce, getCurrentNonce, resetNonce, isInitialized: nonceInitialized, error: nonceError } = 
+    useNonceManager(wallet.account?.address, shredClient);
 
   const tiles = useReadContract({
     abi: canvasAbi,
@@ -144,6 +150,12 @@ export function DrawingCanvas() {
     console.log("txQueue:: ", txQueue);
     if (isTxProcessing || !client || txQueue.length === 0) return;
 
+    // Check if nonce manager is ready
+    if (!nonceInitialized) {
+      console.warn("NonceManager not initialized, skipping transaction");
+      return;
+    }
+
     setIsTxProcessing(true);
     const queue = [...txQueue];
 
@@ -154,27 +166,52 @@ export function DrawingCanvas() {
     const tileIndices = queue.map((tx) => tx.x * canvasSize + tx.y);
 
     try {
-      const txHash = await client.writeContract({
-        address: CONTRACT_ADDRESS,
+      // Get the next nonce for this transaction
+      const nonce = getNextNonce();
+      console.log("Using nonce:", nonce);
+
+      const data = encodeFunctionData({
         abi: canvasAbi,
-        functionName: "paintTiles",
+        functionName: 'paintTiles',
         args: [tileIndices, r, g, b],
+      })
+
+      const serializedTransaction = await client.signTransaction({
+        to: CONTRACT_ADDRESS,
+        data,
+        nonce,
+        gas: BigInt(90_000 * 20_000 * tileIndices.length),
+        gasPrice: BigInt(100),
+        value: BigInt(0),
+        chainId: riseTestnet.id,
+      })
+
+      const receipt = await syncClient.sendRawTransactionSync({
+        serializedTransaction,
+      })
+
+      const completedTx = [...sentTransactions.transactions, ...txQueue];
+      setSentTransactions({
+        blockNumber: Number(receipt.blockNumber),
+        transactions: completedTx,
       });
+      setTxQueue((prev) => prev.slice(tileIndices.length));
 
-      if (txHash) {
-        const transaction = await shredClient.getTransaction({ hash: txHash });
-        console.log("transaction:: ", transaction);
-
-        const completedTx = [...sentTransactions.transactions, ...txQueue];
-        setSentTransactions({
-          blockNumber: Number(transaction.blockNumber),
-          transactions: completedTx,
-        });
-        setTxQueue((prev) => prev.slice(tileIndices.length));
-      }
       console.log("processing completed...");
     } catch (e) {
-      console.error("Error!", e);
+      console.error("Transaction error:", e);
+      
+      // Check if it's a nonce-related error
+      const errorMessage = e instanceof Error ? e.message.toLowerCase() : String(e).toLowerCase();
+      if (errorMessage.includes('nonce') || errorMessage.includes('replacement')) {
+        console.warn("Nonce conflict detected, resetting nonce manager");
+        try {
+          await resetNonce();
+        } catch (resetError) {
+          console.error("Failed to reset nonce:", resetError);
+        }
+      }
+      
       const accountBalance = formatEther(balance?.data?.value ?? 0n);
       if (gasAllowanceRqmt > Number(accountBalance)) {
         showModal({ content: <FundWallet />, title: "Embedded Wallet" });

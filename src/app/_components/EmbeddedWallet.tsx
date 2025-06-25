@@ -9,6 +9,7 @@ import {
 } from "@/components/ui";
 import { useWallet } from "@/hooks/contract/useWallet";
 import { usePage } from "@/hooks/usePage";
+import { useNonceManager } from "@/hooks/useNonceManager";
 import { getMaskedAddress, handleCopy } from "@/lib/utils";
 import { CopyIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import Link from "next/link";
@@ -33,6 +34,10 @@ export function EmbeddedWalletContent() {
   });
 
   const transaction = useTransactionCount({ address: wallet.account.address });
+  
+  // Get nonce manager for displaying local nonce
+  const { getCurrentNonce, isInitialized: nonceInitialized } = 
+    useNonceManager(wallet.account?.address, undefined);
 
   const [inputType, setInputType] = useState<"password" | "text">("password");
 
@@ -124,10 +129,21 @@ export function EmbeddedWalletContent() {
 
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm md:text-md text-text-secondary">
-            Current Nonce:
+            Blockchain Nonce:
           </p>
           <p className="text-sm md:text-md">
             {transaction.data?.toString() ?? 0}
+          </p>
+        </div>
+
+        <Separator />
+
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm md:text-md text-text-secondary">
+            Local Nonce:
+          </p>
+          <p className="text-sm md:text-md">
+            {nonceInitialized ? getCurrentNonce() : 'Not initialized'}
           </p>
         </div>
 

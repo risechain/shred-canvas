@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { createPublicShredClient, shredsWebSocket } from "shreds/viem";
+import { createPublicShredClient, createPublicSyncClient, shredsWebSocket } from "shreds/viem";
 import { Account, createWalletClient, http } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { riseTestnet } from "viem/chains";
@@ -67,7 +67,13 @@ export function useWallet() {
     transport: shredsWebSocket(), // Replace with your Shreds WebSocket endpoint
   });
 
+  const syncClient = createPublicSyncClient({
+    chain: riseTestnet,
+    transport: http(), // Replace with your Shreds WebSocket endpoint
+  });
+
   return {
+    syncClient,
     shredClient,
     isResetting,
     wallet,
