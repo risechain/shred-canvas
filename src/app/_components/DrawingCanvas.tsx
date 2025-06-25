@@ -344,16 +344,16 @@ export function DrawingCanvas() {
       data[index + 3] = 255; // Alpha
     }
 
+    // Apply real time updates
+    realTimeTx.entries().forEach((item) => {
+      loopThruPixels(data, item[1]);
+    });
+
     // Apply sent transactions overlay
     loopThruPixels(data, sentTransactions.transactions);
 
     // Apply pending transactions overlay (highest priority)
     loopThruPixels(data, txQueue);
-
-    // Apply real time updates
-    realTimeTx.entries().forEach((item) => {
-      loopThruPixels(data, item[1]);
-    });
 
     // Update the canvas
     context.fill();
