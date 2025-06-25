@@ -58,7 +58,7 @@ export function DrawingCanvas() {
 
   const { showModal } = useModal();
 
-  const { wallet, getStoredWallet, generateWalletClient, shredClient, syncClient } =
+  const { wallet, getStoredWallet, generateWalletClient, shredClient, syncClient, publicClient } =
     useWallet();
 
 

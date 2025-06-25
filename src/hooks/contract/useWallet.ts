@@ -72,7 +72,14 @@ export function useWallet() {
 
   const syncClient = useMemo(() => createPublicSyncClient({
     chain: riseTestnet,
-    transport: shredsWebSocket(), // Use WebSocket transport for sync client
+    // @ts-expect-error
+    transport: http(),
+  }), []);
+
+  const publicClient = useMemo(() => createPublicSyncClient({
+    chain: riseTestnet,
+    // @ts-expect-error
+    transport: http(),
   }), []);
 
   return {
