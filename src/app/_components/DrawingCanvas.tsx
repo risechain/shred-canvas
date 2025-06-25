@@ -14,7 +14,7 @@ import { FundWallet } from "./FundWallet";
 import { throttle } from "lodash";
 
 type Transaction = {
-  sentTime?: number;
+  blockNumber?: number;
   transactions: TransactionQueue[];
 };
 
@@ -44,12 +44,10 @@ export function DrawingCanvas() {
     brushColor,
     brushSize,
     rgbValues,
-    processingType,
     setCompletedTx,
     setPendingTx,
     isTxProcessing,
     setIsTxProcessing,
-    batchSize,
     realTimeTx,
     setRealTimeTx,
   } = usePage();
@@ -151,7 +149,6 @@ export function DrawingCanvas() {
 
     const { r, g, b } = txQueue[0];
 
-    console.log("txQueue:: ", txQueue);
     console.log("processing...");
 
     const tileIndices = queue.map((tx) => tx.x * canvasSize + tx.y);
@@ -165,9 +162,12 @@ export function DrawingCanvas() {
       });
 
       if (txHash) {
+        const transaction = await shredClient.getTransaction({ hash: txHash });
+        console.log("transaction:: ", transaction);
+
         const completedTx = [...sentTransactions.transactions, ...txQueue];
         setSentTransactions({
-          sentTime: Date.now(),
+          blockNumber: Number(transaction.blockNumber),
           transactions: completedTx,
         });
         setTxQueue((prev) => prev.slice(tileIndices.length));
@@ -344,13 +344,15 @@ export function DrawingCanvas() {
       data[index + 3] = 255; // Alpha
     }
 
+    console.log("sentTransactions:: ", sentTransactions);
+    loopThruPixels(data, sentTransactions.transactions);
+
     // Apply real time updates
     realTimeTx.entries().forEach((item) => {
-      loopThruPixels(data, item[1]);
+      if (item[0] > (sentTransactions.blockNumber ?? 0)) {
+        loopThruPixels(data, item[1]);
+      }
     });
-
-    // Apply sent transactions overlay
-    loopThruPixels(data, sentTransactions.transactions);
 
     // Apply pending transactions overlay (highest priority)
     loopThruPixels(data, txQueue);
