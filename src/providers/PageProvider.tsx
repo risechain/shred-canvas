@@ -8,6 +8,14 @@ type RgbValues = {
   b: number;
 };
 
+export type TransactionQueue = {
+  x: number;
+  y: number;
+  r: number;
+  g: number;
+  b: number;
+};
+
 export type PageContextType = {
   /**
    * Project view: type "grid" | "carousel"
@@ -39,6 +47,9 @@ export type PageContextType = {
 
   batchSize: number;
   setBatchSize: (props: number) => void;
+
+  realTimeTx: Map<number | bigint, TransactionQueue[]>;
+  setRealTimeTx: (props: Map<number | bigint, TransactionQueue[]>) => void;
 };
 
 const initialState: PageContextType = {
@@ -68,6 +79,11 @@ const initialState: PageContextType = {
 
   batchSize: 100,
   setBatchSize: () => {},
+
+  realTimeTx: new Map<number | bigint, TransactionQueue[]>([
+    [0, [{ x: 0, y: 0, r: 0, g: 0, b: 0 }]],
+  ]),
+  setRealTimeTx: () => {},
 };
 
 export const PageContext = createContext<PageContextType>(initialState);
@@ -93,6 +109,9 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
   const [pendingTx, setPendingTx] = useState(0);
   const [completedTx, setCompletedTx] = useState(0);
   const [batchSize, setBatchSize] = useState(20);
+
+  const realTimeTxList = new Map();
+  const [realTimeTx, setRealTimeTx] = useState(realTimeTxList);
 
   const providerValue = useMemo(() => {
     return {
@@ -122,6 +141,9 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
 
       batchSize,
       setBatchSize,
+
+      realTimeTx,
+      setRealTimeTx,
     };
   }, [
     view,
@@ -133,6 +155,7 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
     pendingTx,
     completedTx,
     batchSize,
+    realTimeTx,
   ]);
 
   useEffect(() => {

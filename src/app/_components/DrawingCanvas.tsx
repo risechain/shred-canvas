@@ -10,14 +10,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { useBalance, useReadContract } from "wagmi";
 import canvasAbi from "../../../abi/canvasAbi.json";
 import { FundWallet } from "./FundWallet";
-
-type TransactionQueue = {
-  x: number;
-  y: number;
-  r: number;
-  g: number;
-  b: number;
-};
+import { TransactionQueue } from "@/providers/PageProvider";
 
 type Transaction = {
   sentTime?: number;
@@ -39,10 +32,12 @@ export function DrawingCanvas() {
     x: 0,
     y: 0,
   });
-
   const [sentTransactions, setSentTransactions] = useState<Transaction>({
     transactions: [],
   });
+
+  const uniqueBlocks = new Set<number>();
+  const [blockNumber, setBlockNumber] = useState(uniqueBlocks);
 
   const {
     brushColor,
@@ -66,20 +61,24 @@ export function DrawingCanvas() {
   const { wallet, getStoredWallet, generateWalletClient, shredClient } =
     useWallet();
 
+  const balance = useBalance({
+    address: wallet.account.address,
+  });
+
+  const { batchSize, realTimeTx, setRealTimeTx } = usePage();
+
   shredClient.watchShredEvent({
     event: parseAbiItem(
       "event tilesPainted(uint256[] indices, uint8 r, uint8 g, uint8 b)"
     ),
     onLogs: (logs) => {
-      onRealTimeUpdate(logs[0]?.args);
+      const blockNumber = Number(logs[0]?.blockNumber);
+      uniqueBlocks.add(blockNumber);
+      setBlockNumber(uniqueBlocks);
+
+      onRealTimeUpdate(blockNumber, logs[0]?.args);
     },
   });
-
-  const balance = useBalance({
-    address: wallet.account.address,
-  });
-
-  const { batchSize } = usePage();
 
   const client = useMemo(() => {
     if (!getStoredWallet()?.privateKey) return;
@@ -91,24 +90,30 @@ export function DrawingCanvas() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getStoredWallet()?.privateKey]);
 
-  function onRealTimeUpdate(props?: {
-    indices?: readonly bigint[];
-    r?: number;
-    g?: number;
-    b?: number;
-  }) {
-    props?.indices?.forEach((index) => {
+  function onRealTimeUpdate(
+    blockNumber: number,
+    props?: {
+      indices?: readonly bigint[];
+      r?: number;
+      g?: number;
+      b?: number;
+    }
+  ) {
+    if (!props?.indices) return;
+    const txList = props?.indices?.map((index) => {
       const coordinate = getCoordinatesFromIndex(Number(index));
-      sentTransactions.transactions.push({
+
+      return {
         x: coordinate?.x ?? 0,
         y: coordinate?.y ?? 0,
         r: props.r ?? 0,
         g: props.g ?? 0,
         b: props.b ?? 0,
-      });
-
-      setSentTransactions({ ...sentTransactions });
+      };
     });
+
+    realTimeTx.set(blockNumber, txList);
+    setRealTimeTx(realTimeTx);
   }
 
   function getCoordinatesFromIndex(index: number) {
@@ -220,13 +225,17 @@ export function DrawingCanvas() {
     if (!contextRef.current) return;
     contextRef.current.closePath();
     setIsDrawing(false);
-
+    // console.log("stop:: ", txQueue);
     if (processingType === "individual") {
       await processTx();
     }
   }
 
-  function draw({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) {
+  function draw({
+    nativeEvent,
+    clientX,
+    clientY,
+  }: React.MouseEvent<HTMLCanvasElement>) {
     if (!isDrawing) return;
 
     const canvas = canvasRef.current;
@@ -236,6 +245,11 @@ export function DrawingCanvas() {
 
     // Do not remove this -- this will prevent from adding duplicating coordinates in txQueue
     if (lastTx.x === x && lastTx.y === y) return;
+
+    console.log("x, y:: ", x, y);
+    console.log("lastTx:: ", lastTx.x, lastTx.y);
+    console.log("===============");
+
     setLastTx({
       x,
       y,
@@ -257,6 +271,7 @@ export function DrawingCanvas() {
     ]);
   }
 
+  // TODO: merge this widh touchStart and touchMove
   function touchStart(e: React.TouchEvent<HTMLCanvasElement>) {
     e.preventDefault();
     const touch = e.touches[0];
@@ -279,7 +294,6 @@ export function DrawingCanvas() {
   function touchMove(e: React.TouchEvent<HTMLCanvasElement>) {
     if (!isDrawing) return;
     e.preventDefault();
-
     const touch = e.touches[0];
     const canvas = canvasRef.current;
 
@@ -306,6 +320,21 @@ export function DrawingCanvas() {
 
   function coordToBufferIndex(x: number, y: number) {
     return Math.floor(y) * canvasSize + Math.floor(x);
+  }
+
+  function loopThruPixels(
+    data: Uint8ClampedArray<ArrayBufferLike>,
+    transactions: TransactionQueue[]
+  ) {
+    transactions.forEach((tx) => {
+      const index = coordToBufferIndex(tx.x, tx.y);
+      const pixelIndex = index * 4;
+
+      data[pixelIndex] = tx.r; // R
+      data[pixelIndex + 1] = tx.g; // G
+      data[pixelIndex + 2] = tx.b; // B
+      data[pixelIndex + 3] = 255; // Alpha
+    });
   }
 
   function renderCanvas() {
@@ -336,25 +365,14 @@ export function DrawingCanvas() {
     }
 
     // Apply sent transactions overlay
-    sentTransactions.transactions.forEach((tx) => {
-      const index = coordToBufferIndex(tx.x, tx.y);
-      const pixelIndex = index * 4;
-
-      data[pixelIndex] = tx.r; // R
-      data[pixelIndex + 1] = tx.g; // G
-      data[pixelIndex + 2] = tx.b; // B
-      data[pixelIndex + 3] = 255; // Alpha
-    });
+    loopThruPixels(data, sentTransactions.transactions);
 
     // Apply pending transactions overlay (highest priority)
-    txQueue.forEach((tx) => {
-      const index = coordToBufferIndex(tx.x, tx.y);
-      const pixelIndex = index * 4;
+    loopThruPixels(data, txQueue);
 
-      data[pixelIndex] = tx.r; // R
-      data[pixelIndex + 1] = tx.g; // G
-      data[pixelIndex + 2] = tx.b; // B
-      data[pixelIndex + 3] = 255; // Alpha
+    // Apply real time updates
+    realTimeTx.entries().forEach((item) => {
+      loopThruPixels(data, item[1]);
     });
 
     // Update the canvas
@@ -368,7 +386,7 @@ export function DrawingCanvas() {
     setCompletedTx(sentTransactions.transactions.length);
     setPendingTx(txQueue.length);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tiles.data, txQueue, sentTransactions]);
+  }, [tiles.data, txQueue, sentTransactions, blockNumber.size]);
 
   useEffect(() => {
     if (processingType === "batch" && batchSize <= txQueue.length) {
@@ -402,7 +420,7 @@ export function DrawingCanvas() {
   return (
     <div
       className={cn(
-        "relative flex-1 flex flex-col gap-2 items-center justify-center h-full w-full bg-foreground/75 dark:bg-accent/35"
+        "relative flex-1 flex flex-col gap-2 py-3 items-center justify-center h-full w-full bg-foreground/75 dark:bg-accent/35"
       )}
     >
       <HashLoader
@@ -420,7 +438,7 @@ export function DrawingCanvas() {
         onTouchStart={touchStart}
         onTouchMove={touchMove}
         onTouchEnd={stopDrawing}
-        className="cursor-crosshair touch-none aspect-square w-full max-w-[820px] max-h-[820px]"
+        className="border border-border-primary cursor-crosshair touch-none aspect-square w-full max-w-[820px] max-h-[820px]"
         style={{
           imageRendering: "pixelated",
         }}
