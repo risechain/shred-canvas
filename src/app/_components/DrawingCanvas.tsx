@@ -92,7 +92,7 @@ export function DrawingCanvas() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getStoredWallet()?.privateKey]);
 
-  const throttledTx = throttle(processTx, 200, { trailing: true });
+  const throttledTx = throttle(processTx, 200, { trailing: false });
 
   function onRealTimeUpdate(
     blockNumber: number,
@@ -207,14 +207,16 @@ export function DrawingCanvas() {
       },
     ]);
     setIsDrawing(true);
+    // TODO: should throtthle on mousedown but the state is not updated yet
+    // throttledTx();
   }
 
   async function stopDrawing() {
     if (!contextRef.current) return;
     contextRef.current.closePath();
     setIsDrawing(false);
-    // await processTx();
-    throttledTx.cancel();
+    throttledTx.cancel(); // this should cancel the throttle and immediately performs transaction
+    await processTx(); // TODO: for onclicks
   }
 
   function draw({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) {
