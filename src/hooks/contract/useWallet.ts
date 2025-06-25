@@ -1,5 +1,9 @@
 import { useMemo, useState } from "react";
-import { createPublicShredClient, createPublicSyncClient, shredsWebSocket } from "shreds/viem";
+import {
+  createPublicShredClient,
+  createPublicSyncClient,
+  shredsWebSocket,
+} from "shreds/viem";
 import { Account, createWalletClient, http } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { riseTestnet } from "viem/chains";
@@ -36,7 +40,6 @@ export function useWallet() {
       chain: riseTestnet,
       transport: http(),
     });
-
     return walletClient;
   }
 
