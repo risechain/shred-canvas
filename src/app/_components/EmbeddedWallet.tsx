@@ -151,58 +151,61 @@ export function EmbeddedWalletContent() {
 
         <Separator />
 
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm md:text-md text-text-secondary">
-            Processing Option:
-          </p>
-          {/* <p className="text-sm md:text-md">Batch</p> */}
+        {/* hide this for now */}
+        <div className="hidden">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm md:text-md text-text-secondary">
+              Processing Option:
+            </p>
+            {/* <p className="text-sm md:text-md">Batch</p> */}
 
-          <ToggleGroup type="single" value={processingType}>
-            <ToggleGroupItem
-              value="individual"
-              className="px-4"
-              onClick={() => {
-                setProcessingType("individual");
-              }}
-            >
-              Individual
-            </ToggleGroupItem>
-            <ToggleGroupItem
-              value="batch"
-              className="px-4"
-              onClick={() => {
-                setProcessingType("batch");
-              }}
-            >
-              By Batch
-            </ToggleGroupItem>
-          </ToggleGroup>
-        </div>
-
-        <Separator />
-
-        <Collapsible open={processingType === "batch"}>
-          <CollapsibleContent className="space-y-3">
-            <div className="flex gap-2 justify-between items-center">
-              <p className="flex-1 text-sm md:text-md text-text-secondary">
-                Batch Size:
-              </p>
-              <Input
-                type="number"
-                min={100}
-                value={batchSize}
-                onChange={(event) => {
-                  const value = Number(event.target.value);
-                  if (value > 1000) return;
-                  setBatchSize(value);
-                  localStorage.setItem("batch-size", value.toString());
+            <ToggleGroup type="single" value={processingType}>
+              <ToggleGroupItem
+                value="individual"
+                className="px-4"
+                onClick={() => {
+                  setProcessingType("individual");
                 }}
-                className="flex-1 border border-border-primary rounded"
-              />
-            </div>
-            <Separator />
-          </CollapsibleContent>
-        </Collapsible>
+              >
+                Individual
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="batch"
+                className="px-4"
+                onClick={() => {
+                  setProcessingType("batch");
+                }}
+              >
+                By Batch
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+
+          <Separator />
+
+          <Collapsible open={processingType === "batch"}>
+            <CollapsibleContent className="space-y-3">
+              <div className="flex gap-2 justify-between items-center">
+                <p className="flex-1 text-sm md:text-md text-text-secondary">
+                  Batch Size:
+                </p>
+                <Input
+                  type="number"
+                  min={100}
+                  value={batchSize}
+                  onChange={(event) => {
+                    const value = Number(event.target.value);
+                    if (value > 1000) return;
+                    setBatchSize(value);
+                    localStorage.setItem("batch-size", value.toString());
+                  }}
+                  className="flex-1 border border-border-primary rounded"
+                />
+              </div>
+              <Separator />
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
       </div>
       <div className="flex flex-wrap gap-2 pt-4 justify-end">
         <Button
