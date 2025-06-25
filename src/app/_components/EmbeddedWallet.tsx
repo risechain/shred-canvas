@@ -78,6 +78,7 @@ export function EmbeddedWalletContent() {
             <input
               type={inputType}
               value={storedWallet?.privateKey ?? ""}
+              readOnly
               className="w-full text-sm"
             />
             <div className="flex gap-3 items-center">

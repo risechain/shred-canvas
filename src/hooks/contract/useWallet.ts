@@ -62,15 +62,15 @@ export function useWallet() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isResetting]);
 
-  const shredClient = createPublicShredClient({
+  const shredClient = useMemo(() => createPublicShredClient({
     chain: riseTestnet,
     transport: shredsWebSocket(), // Replace with your Shreds WebSocket endpoint
-  });
+  }), []);
 
-  const syncClient = createPublicSyncClient({
+  const syncClient = useMemo(() => createPublicSyncClient({
     chain: riseTestnet,
-    transport: http(), // Replace with your Shreds WebSocket endpoint
-  });
+    transport: shredsWebSocket(), // Use WebSocket transport for sync client
+  }), []);
 
   return {
     syncClient,

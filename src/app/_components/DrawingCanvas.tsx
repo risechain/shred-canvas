@@ -12,7 +12,6 @@ import { privateKeyToAccount } from "viem/accounts";
 import { useBalance, useReadContract } from "wagmi";
 import canvasAbi from "../../../abi/canvasAbi.json";
 import { FundWallet } from "./FundWallet";
-import { throttle } from "lodash";
 import { riseTestnet } from "viem/chains";
 
 type Transaction = {
@@ -42,14 +41,17 @@ export function DrawingCanvas() {
   const uniqueBlocks = new Set<number>();
   const [blockNumber, setBlockNumber] = useState(uniqueBlocks);
 
+  // Concurrent transaction system
+  const batchIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const currentBatchRef = useRef<TransactionQueue[]>([]);
+  const BATCH_TIMEOUT_MS = 100;
+
   const {
     brushColor,
     brushSize,
     rgbValues,
     setCompletedTx,
     setPendingTx,
-    isTxProcessing,
-    setIsTxProcessing,
     realTimeTx,
     setRealTimeTx,
   } = usePage();
@@ -59,8 +61,9 @@ export function DrawingCanvas() {
   const { wallet, getStoredWallet, generateWalletClient, shredClient, syncClient } =
     useWallet();
 
+
   // Initialize nonce manager
-  const { getNextNonce, getCurrentNonce, resetNonce, isInitialized: nonceInitialized, error: nonceError } = 
+  const { getNextNonce, resetNonce, isInitialized: nonceInitialized } = 
     useNonceManager(wallet.account?.address, shredClient);
 
   const tiles = useReadContract({
@@ -68,6 +71,7 @@ export function DrawingCanvas() {
     address: CONTRACT_ADDRESS,
     functionName: "getTiles",
   });
+
 
   const balance = useBalance({
     address: wallet.account.address,
@@ -96,7 +100,92 @@ export function DrawingCanvas() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getStoredWallet()?.privateKey]);
 
-  const throttledTx = throttle(processTx, 200, { trailing: false });
+  // Concurrent transaction processing
+  const sendBatch = async (pixels: TransactionQueue[]) => {
+    if (!client || !nonceInitialized || pixels.length === 0) return;
+
+    const { r, g, b } = pixels[0];
+    const tileIndices = pixels.map((tx) => tx.x * canvasSize + tx.y);
+
+    try {
+      // Get the next nonce for this transaction
+      const nonce = getNextNonce();
+      console.log(`Sending batch of ${pixels.length} pixels with nonce:`, nonce);
+
+      const data = encodeFunctionData({
+        abi: canvasAbi,
+        functionName: 'paintTiles',
+        args: [tileIndices, r, g, b],
+      });
+
+      const serializedTransaction = await client.signTransaction({
+        to: CONTRACT_ADDRESS,
+        data,
+        nonce,
+        gas: BigInt(90_000 * 20_000 * tileIndices.length),
+        gasPrice: BigInt(100),
+        value: BigInt(0),
+        chainId: riseTestnet.id,
+      });
+
+      // Send transaction concurrently (don't await receipt)
+      syncClient.sendRawTransactionSync({
+        serializedTransaction,
+      }).then((receipt) => {
+        console.log(`Batch completed with ${pixels.length} pixels`);
+        
+        // Remove confirmed pixels from visual queue
+        setTxQueue(prev => prev.filter(px => 
+          !pixels.some(batchPx => batchPx.x === px.x && batchPx.y === px.y)
+        ));
+        
+        // Update sent transactions
+        setSentTransactions(prev => ({
+          blockNumber: Number(receipt.blockNumber),
+          transactions: [...prev.transactions, ...pixels],
+        }));
+      }).catch((error) => {
+        console.error("Batch transaction error:", error);
+        
+        // Check if it's a nonce-related error
+        const errorMessage = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+        if (errorMessage.includes('nonce') || errorMessage.includes('replacement')) {
+          console.warn("Nonce conflict detected, resetting nonce manager");
+          resetNonce().catch(console.error);
+        }
+      });
+
+    } catch (e) {
+      console.error("Transaction signing error:", e);
+      const accountBalance = formatEther(balance?.data?.value ?? 0n);
+      if (gasAllowanceRqmt > Number(accountBalance)) {
+        showModal({ content: <FundWallet />, title: "Embedded Wallet" });
+      }
+    }
+  };
+
+  const flushCurrentBatch = () => {
+    if (currentBatchRef.current.length > 0) {
+      const batch = [...currentBatchRef.current];
+      currentBatchRef.current = [];
+      
+      // Send batch - pixels stay in txQueue until transaction confirms
+      sendBatch(batch);
+    }
+  };
+
+  const addPixelToBatch = (pixel: TransactionQueue) => {
+    // Add to current batch
+    currentBatchRef.current.push(pixel);
+    
+    // Start timer if not already running
+    if (!batchIntervalRef.current) {
+      batchIntervalRef.current = setTimeout(() => {
+        flushCurrentBatch();
+        batchIntervalRef.current = null;
+      }, BATCH_TIMEOUT_MS);
+    }
+  };
 
   function onRealTimeUpdate(
     blockNumber: number,
@@ -146,82 +235,6 @@ export function DrawingCanvas() {
     return { x, y };
   }
 
-  async function processTx() {
-    console.log("txQueue:: ", txQueue);
-    if (isTxProcessing || !client || txQueue.length === 0) return;
-
-    // Check if nonce manager is ready
-    if (!nonceInitialized) {
-      console.warn("NonceManager not initialized, skipping transaction");
-      return;
-    }
-
-    setIsTxProcessing(true);
-    const queue = [...txQueue];
-
-    const { r, g, b } = txQueue[0];
-
-    console.log("processing...");
-
-    const tileIndices = queue.map((tx) => tx.x * canvasSize + tx.y);
-
-    try {
-      // Get the next nonce for this transaction
-      const nonce = getNextNonce();
-      console.log("Using nonce:", nonce);
-
-      const data = encodeFunctionData({
-        abi: canvasAbi,
-        functionName: 'paintTiles',
-        args: [tileIndices, r, g, b],
-      })
-
-      const serializedTransaction = await client.signTransaction({
-        to: CONTRACT_ADDRESS,
-        data,
-        nonce,
-        gas: BigInt(90_000 * 20_000 * tileIndices.length),
-        gasPrice: BigInt(100),
-        value: BigInt(0),
-        chainId: riseTestnet.id,
-      })
-
-      const receipt = await syncClient.sendRawTransactionSync({
-        serializedTransaction,
-      })
-
-      const completedTx = [...sentTransactions.transactions, ...txQueue];
-      setSentTransactions({
-        blockNumber: Number(receipt.blockNumber),
-        transactions: completedTx,
-      });
-      setTxQueue((prev) => prev.slice(tileIndices.length));
-
-      console.log("processing completed...");
-    } catch (e) {
-      console.error("Transaction error:", e);
-      
-      // Check if it's a nonce-related error
-      const errorMessage = e instanceof Error ? e.message.toLowerCase() : String(e).toLowerCase();
-      if (errorMessage.includes('nonce') || errorMessage.includes('replacement')) {
-        console.warn("Nonce conflict detected, resetting nonce manager");
-        try {
-          await resetNonce();
-        } catch (resetError) {
-          console.error("Failed to reset nonce:", resetError);
-        }
-      }
-      
-      const accountBalance = formatEther(balance?.data?.value ?? 0n);
-      if (gasAllowanceRqmt > Number(accountBalance)) {
-        showModal({ content: <FundWallet />, title: "Embedded Wallet" });
-      }
-    }
-
-    setIsTxProcessing(false);
-
-    console.log("==============================================");
-  }
 
   function startDrawing({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current;
@@ -233,59 +246,64 @@ export function DrawingCanvas() {
     contextRef.current.beginPath();
     contextRef.current.moveTo(x, y);
 
-    setTxQueue((prev) => [
-      ...prev,
-      {
-        x,
-        y,
-        r: rgbValues.r,
-        g: rgbValues.g,
-        b: rgbValues.b,
-      },
-    ]);
+    const pixel = {
+      x,
+      y,
+      r: rgbValues.r,
+      g: rgbValues.g,
+      b: rgbValues.b,
+    };
+
+    // Add to visual queue
+    setTxQueue(prev => [...prev, pixel]);
+    
+    // Add to batch for processing
+    addPixelToBatch(pixel);
+    
     setIsDrawing(true);
-    // TODO: should throtthle on mousedown but the state is not updated yet
-    // throttledTx();
   }
 
   async function stopDrawing() {
     if (!contextRef.current) return;
     contextRef.current.closePath();
     setIsDrawing(false);
-    throttledTx.cancel(); // this should cancel the throttle and immediately performs transaction
-    await processTx(); // TODO: for onclicks
+    
+    // Clear the batch timer and immediately flush current batch
+    if (batchIntervalRef.current) {
+      clearTimeout(batchIntervalRef.current);
+      batchIntervalRef.current = null;
+    }
+    
+    // Immediately send any pixels that are waiting
+    flushCurrentBatch();
   }
 
   function draw({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) {
     if (!isDrawing) return;
-    throttledTx();
 
     const canvas = canvasRef.current;
 
     if (!canvas) return;
     const { x, y } = getCoordinates(canvas, nativeEvent);
+    
     // Do not remove this -- this will prevent from adding duplicating coordinates in txQueue
     if (lastTx.x === x && lastTx.y === y) return;
 
-    setLastTx({
+    const pixel = {
       x,
       y,
       r: rgbValues.r,
       g: rgbValues.g,
       b: rgbValues.b,
-    });
+    };
 
-    // Add transaction to queue (no direct drawing on canvas)
-    setTxQueue((prev) => [
-      ...prev,
-      {
-        x,
-        y,
-        r: rgbValues.r,
-        g: rgbValues.g,
-        b: rgbValues.b,
-      },
-    ]);
+    setLastTx(pixel);
+
+    // Add to visual queue
+    setTxQueue(prev => [...prev, pixel]);
+    
+    // Add to batch for processing
+    addPixelToBatch(pixel);
   }
 
   // TODO: merge this widh touchStart and touchMove
@@ -299,12 +317,27 @@ export function DrawingCanvas() {
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
 
-    const x = (touch.clientX - rect.left) * scaleX;
-    const y = (touch.clientY - rect.top) * scaleY;
+    const x = Math.floor((touch.clientX - rect.left) * scaleX);
+    const y = Math.floor((touch.clientY - rect.top) * scaleY);
 
     if (!contextRef.current) return;
     contextRef.current.beginPath();
     contextRef.current.moveTo(x, y);
+    
+    const pixel = {
+      x,
+      y,
+      r: rgbValues.r,
+      g: rgbValues.g,
+      b: rgbValues.b,
+    };
+
+    // Add to visual queue
+    setTxQueue(prev => [...prev, pixel]);
+    
+    // Add to batch for processing
+    addPixelToBatch(pixel);
+    
     setIsDrawing(true);
   }
 
@@ -319,20 +352,22 @@ export function DrawingCanvas() {
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
 
-    const x = (touch.clientX - rect.left) * scaleX;
-    const y = (touch.clientY - rect.top) * scaleY;
+    const x = Math.floor((touch.clientX - rect.left) * scaleX);
+    const y = Math.floor((touch.clientY - rect.top) * scaleY);
 
-    // Add to transaction queue instead of direct drawing
-    setTxQueue((prev) => [
-      ...prev,
-      {
-        x: Math.floor(x),
-        y: Math.floor(y),
-        r: rgbValues.r,
-        g: rgbValues.g,
-        b: rgbValues.b,
-      },
-    ]);
+    const pixel = {
+      x,
+      y,
+      r: rgbValues.r,
+      g: rgbValues.g,
+      b: rgbValues.b,
+    };
+
+    // Add to visual queue
+    setTxQueue(prev => [...prev, pixel]);
+    
+    // Add to batch for processing
+    addPixelToBatch(pixel);
   }
 
   function coordToBufferIndex(x: number, y: number) {
@@ -363,7 +398,6 @@ export function DrawingCanvas() {
     const imageData = context.createImageData(canvasSize, canvasSize);
     const data = imageData.data;
 
-    // Start with base canvas data
     if (!tiles.data) return;
     const rBuffer = Object.values((tiles.data as number[])[0]);
     const gBuffer = Object.values((tiles.data as number[])[1]);
@@ -381,7 +415,9 @@ export function DrawingCanvas() {
       data[index + 3] = 255; // Alpha
     }
 
-    console.log("sentTransactions:: ", sentTransactions);
+    // console.log("sentTransactions:: ", sentTransactions);
+
+
     loopThruPixels(data, sentTransactions.transactions);
 
     // Apply real time updates
@@ -429,6 +465,15 @@ export function DrawingCanvas() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Cleanup batch timer on unmount
+  useEffect(() => {
+    return () => {
+      if (batchIntervalRef.current) {
+        clearTimeout(batchIntervalRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div
       className={cn(
@@ -438,7 +483,7 @@ export function DrawingCanvas() {
       <HashLoader
         color="white"
         size={36}
-        loading={isTxProcessing}
+        loading={txQueue.length > 0 || currentBatchRef.current.length > 0}
         style={{ position: "absolute", bottom: 32, right: 32 }}
       />
       <canvas
