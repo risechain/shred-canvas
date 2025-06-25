@@ -58,7 +58,7 @@ export function DrawingCanvas() {
 
   const { showModal } = useModal();
 
-  const { wallet, getStoredWallet, generateWalletClient, shredClient, syncClient, publicClient } =
+  const { wallet, getStoredWallet, generateWalletClient, shredClient, syncClient, publicClient, account } =
     useWallet();
 
 
@@ -127,7 +127,7 @@ export function DrawingCanvas() {
         args: [tileIndices, r, g, b],
       });
 
-      const serializedTransaction = await client.signTransaction({
+      const serializedTransaction = await account.signTransaction({
         to: CONTRACT_ADDRESS,
         data,
         nonce,

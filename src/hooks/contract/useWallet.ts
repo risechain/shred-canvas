@@ -4,7 +4,7 @@ import {
   createPublicSyncClient,
   shredsWebSocket,
 } from "shreds/viem";
-import { Account, createWalletClient, http } from "viem";
+import { Account, createPublicClient, createWalletClient, http } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { riseTestnet } from "viem/chains";
 
@@ -76,13 +76,23 @@ export function useWallet() {
     transport: http(),
   }), []);
 
-  const publicClient = useMemo(() => createPublicSyncClient({
+  const publicClient = useMemo(() => createPublicClient({
     chain: riseTestnet,
-    // @ts-expect-error
     transport: http(),
   }), []);
 
+  // Get the account from stored wallet
+  const account = useMemo(() => {
+    const storedWallet = getStoredWallet();
+    if (storedWallet?.privateKey) {
+      return privateKeyToAccount(storedWallet.privateKey);
+    }
+    return null;
+  }, []);
+
   return {
+    account,
+    publicClient,
     syncClient,
     shredClient,
     isResetting,
