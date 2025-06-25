@@ -67,12 +67,12 @@ export function useWallet() {
 
   const shredClient = useMemo(() => createPublicShredClient({
     chain: riseTestnet,
-    transport: shredsWebSocket(), // Replace with your Shreds WebSocket endpoint
+    transport: shredsWebSocket('wss://indexing.testnet.riselabs.xyz/ws'), // Replace with your Shreds WebSocket endpoint
   }), []);
 
   const syncClient = useMemo(() => createPublicSyncClient({
     chain: riseTestnet,
-    // @ts-expect-error
+    // @ts-expect-error Shreds SDK type incompatibility with standard transport
     transport: http(),
   }), []);
 

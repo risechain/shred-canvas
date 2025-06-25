@@ -48,8 +48,8 @@ export type PageContextType = {
   batchSize: number;
   setBatchSize: (props: number) => void;
 
-  realTimeTx: Map<number | bigint, TransactionQueue[]>;
-  setRealTimeTx: (props: Map<number | bigint, TransactionQueue[]>) => void;
+  realTimeTx: TransactionQueue[];
+  setRealTimeTx: (props: TransactionQueue[]) => void;
 };
 
 const initialState: PageContextType = {
@@ -80,9 +80,7 @@ const initialState: PageContextType = {
   batchSize: 100,
   setBatchSize: () => {},
 
-  realTimeTx: new Map<number | bigint, TransactionQueue[]>([
-    [0, [{ x: 0, y: 0, r: 0, g: 0, b: 0 }]],
-  ]),
+  realTimeTx: [],
   setRealTimeTx: () => {},
 };
 
@@ -110,8 +108,7 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
   const [completedTx, setCompletedTx] = useState(0);
   const [batchSize, setBatchSize] = useState(20);
 
-  const realTimeTxList = new Map();
-  const [realTimeTx, setRealTimeTx] = useState(realTimeTxList);
+  const [realTimeTx, setRealTimeTx] = useState<TransactionQueue[]>([]);
 
   const providerValue = useMemo(() => {
     return {
