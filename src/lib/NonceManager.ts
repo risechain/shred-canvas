@@ -12,7 +12,7 @@ export class NonceManager {
     try {
       const currentNonce = await publicClient.getTransactionCount({
         address,
-        blockTag: 'pending' // Include pending transactions
+        blockTag: 'latest'
       });
       
       this.nonces.set(address, currentNonce);
