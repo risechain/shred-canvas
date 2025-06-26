@@ -30,8 +30,9 @@ const fkGrotesk = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Rise Shred Canvas",
-  description: "Shred Canvas",
+  title: "RISE Shred Canvas",
+  description:
+    "Discover the power of the Shred API — a client made specifically to interact with Shreds on the RISE Chain!",
   icons: {
     icon: [
       { url: "/favicon_light.svg", media: "(prefers-color-scheme: light)" },
