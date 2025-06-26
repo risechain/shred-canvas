@@ -53,9 +53,9 @@ export default function RootLayout({
         <AppProvider>
           <DynamicFavicon />
           <Modal />
-          <Toaster 
-            position="bottom-left" 
-            visibleToasts={3} 
+          <Toaster
+            position="bottom-left"
+            visibleToasts={3}
             expand={false}
             richColors
             closeButton
