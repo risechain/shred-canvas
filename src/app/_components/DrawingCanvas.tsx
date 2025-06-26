@@ -12,7 +12,7 @@ import { HashLoader } from "react-spinners";
 import { toast } from "sonner";
 import { encodeFunctionData, parseAbiItem } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { useBalance, useReadContract } from "wagmi";
+import { useReadContract } from "wagmi";
 import canvasAbi from "../../../abi/canvasAbi.json";
 import { FundWallet } from "./FundWallet";
 
@@ -24,8 +24,6 @@ type PixelWithTimestamp = TransactionQueue & {
 const USER_PIXEL_FADE_DURATION = 3000; // 3 seconds
 
 export function DrawingCanvas() {
-  const canvasSize = 64;
-
   // Canvas refs for double buffering
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -48,7 +46,7 @@ export function DrawingCanvas() {
   const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const BATCH_TIMEOUT_MS = 100;
 
-  const { contract, chain } = useNetworkConfig();
+  const { contract, chain, canvasSize } = useNetworkConfig();
 
   const { brushColor, brushSize, rgbValues, setPendingTx } = usePage();
 
@@ -86,6 +84,7 @@ export function DrawingCanvas() {
     abi: canvasAbi,
     address: contract,
     functionName: "getTiles",
+    chainId: chain.id,
   });
 
   // Set up blockchain event listener once
