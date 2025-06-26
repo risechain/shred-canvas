@@ -16,10 +16,12 @@ import Link from "next/link";
 import { useState } from "react";
 import { formatEther } from "viem";
 import { useBalance, useTransactionCount } from "wagmi";
+import { useNetworkConfig } from "@/hooks/contract/useNetworkConfig";
 
 export function EmbeddedWalletContent() {
   const { setIsResetting, resetWalletClient, wallet, getStoredWallet } =
     useWallet();
+
   const {
     processingType,
     pendingTx,
@@ -29,15 +31,20 @@ export function EmbeddedWalletContent() {
     setProcessingType,
   } = usePage();
 
+  const { chain } = useNetworkConfig();
+
   const balance = useBalance({
     address: wallet.account.address,
+    chainId: chain.id,
   });
 
   const transaction = useTransactionCount({ address: wallet.account.address });
-  
+
   // Get nonce manager for displaying local nonce
-  const { getCurrentNonce, isInitialized: nonceInitialized } = 
-    useNonceManager(wallet.account?.address, undefined);
+  const { getCurrentNonce, isInitialized: nonceInitialized } = useNonceManager(
+    wallet.account?.address,
+    undefined
+  );
 
   const [inputType, setInputType] = useState<"password" | "text">("password");
 
@@ -140,11 +147,9 @@ export function EmbeddedWalletContent() {
         <Separator />
 
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm md:text-md text-text-secondary">
-            Local Nonce:
-          </p>
+          <p className="text-sm md:text-md text-text-secondary">Local Nonce:</p>
           <p className="text-sm md:text-md">
-            {nonceInitialized ? getCurrentNonce() : 'Not initialized'}
+            {nonceInitialized ? getCurrentNonce() : "Not initialized"}
           </p>
         </div>
 

@@ -88,10 +88,6 @@ export function DrawingCanvas() {
     functionName: "getTiles",
   });
 
-  const balance = useBalance({
-    address: wallet.account.address,
-  });
-
   // Set up blockchain event listener once
   useEffect(() => {
     const unwatch = shredClient.watchShredEvent({
