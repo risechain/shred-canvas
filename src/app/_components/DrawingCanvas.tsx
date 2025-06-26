@@ -1,27 +1,27 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useWallet } from "@/hooks/contract/useWallet";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { useModal } from "@/hooks/useModal";
-import { usePage } from "@/hooks/usePage";
 import { useNonceManager } from "@/hooks/useNonceManager";
+import { usePage } from "@/hooks/usePage";
 import { cn } from "@/lib/utils";
 import { TransactionQueue } from "@/providers/PageProvider";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { HashLoader } from "react-spinners";
+import { toast } from "sonner";
 import { encodeFunctionData, formatEther, parseAbiItem } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+import { riseTestnet } from "viem/chains";
 import { useBalance, useReadContract } from "wagmi";
-import { toast } from "sonner";
 import canvasAbi from "../../../abi/canvasAbi.json";
 import { FundWallet } from "./FundWallet";
-import { riseTestnet } from "viem/chains";
-import { useIsMobile } from "@/hooks/useIsMobile";
+import { useContractAddress } from "@/hooks/contract/useContractAddress";
 
 type PixelWithTimestamp = TransactionQueue & {
   timestamp: number;
   opacity: number;
 };
 
-const CONTRACT_ADDRESS = "0xF8557708e908CBbBD3DB3581135844d49d61E2a8";
 const USER_PIXEL_FADE_DURATION = 3000; // 3 seconds
 
 export function DrawingCanvas() {
@@ -36,7 +36,9 @@ export function DrawingCanvas() {
 
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
   const [userPixels, setUserPixels] = useState<PixelWithTimestamp[]>([]); // Buffer 1 data
-  const [blockchainPixels, setBlockchainPixels] = useState<TransactionQueue[]>([]); // Buffer 2 data
+  const [blockchainPixels, setBlockchainPixels] = useState<TransactionQueue[]>(
+    []
+  ); // Buffer 2 data
   const [lastTx, setLastTx] = useState<Partial<TransactionQueue>>({
     x: 0,
     y: 0,
@@ -48,32 +50,38 @@ export function DrawingCanvas() {
   const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const BATCH_TIMEOUT_MS = 100;
 
-  const {
-    brushColor,
-    brushSize,
-    rgbValues,
-    setCompletedTx,
-    setPendingTx,
-  } = usePage();
+  const CONTRACT_ADDRESS = useContractAddress();
+
+  const { brushColor, brushSize, rgbValues, setCompletedTx, setPendingTx } =
+    usePage();
 
   const { showModal } = useModal();
 
-  const { wallet, getStoredWallet, generateWalletClient, shredClient, syncClient, publicClient, account } =
-    useWallet();
-  
+  const {
+    wallet,
+    getStoredWallet,
+    generateWalletClient,
+    shredClient,
+    syncClient,
+    publicClient,
+    account,
+  } = useWallet();
+
   const isMobile = useIsMobile();
 
-
   // Initialize nonce manager
-  const { getNextNonce, resetNonce, isInitialized: nonceInitialized } = 
-    useNonceManager(wallet.account?.address, publicClient);
+  const {
+    getNextNonce,
+    resetNonce,
+    isInitialized: nonceInitialized,
+  } = useNonceManager(wallet.account?.address, publicClient);
 
   // Log nonce initialization status
   useEffect(() => {
-    console.log('Nonce manager status:', {
+    console.log("Nonce manager status:", {
       address: wallet.account?.address,
       nonceInitialized,
-      publicClientAvailable: !!publicClient
+      publicClientAvailable: !!publicClient,
     });
   }, [wallet.account?.address, nonceInitialized, publicClient]);
 
@@ -82,7 +90,6 @@ export function DrawingCanvas() {
     address: CONTRACT_ADDRESS,
     functionName: "getTiles",
   });
-
 
   const balance = useBalance({
     address: wallet.account.address,
@@ -101,7 +108,7 @@ export function DrawingCanvas() {
 
     // Cleanup function to stop watching when component unmounts
     return () => {
-      if (typeof unwatch === 'function') {
+      if (typeof unwatch === "function") {
         unwatch();
       }
     };
@@ -128,16 +135,19 @@ export function DrawingCanvas() {
     try {
       // Get the next nonce for this transaction
       const nonce = getNextNonce();
-      console.log(`Sending batch of ${pixels.length} pixels with nonce:`, nonce);
+      console.log(
+        `Sending batch of ${pixels.length} pixels with nonce:`,
+        nonce
+      );
 
       const data = encodeFunctionData({
         abi: canvasAbi,
-        functionName: 'paintTiles',
+        functionName: "paintTiles",
         args: [tileIndices, r, g, b],
       });
 
       if (!account) {
-        throw new Error('Account not available');
+        throw new Error("Account not available");
       }
 
       const serializedTransaction = await account.signTransaction({
@@ -151,24 +161,32 @@ export function DrawingCanvas() {
       });
 
       // Send transaction concurrently (don't await receipt)
-      syncClient.sendRawTransactionSync({
-        serializedTransaction,
-      }).then((_receipt) => {
-        console.log(`Batch completed with ${pixels.length} pixels`);
-        
-        // Remove confirmed pixels from user overlay (they'll appear via blockchain events)
-        removeUserPixels(pixels);
-      }).catch((error) => {
-        console.error("Batch transaction error:", error);
-        
-        // Check if it's a nonce-related error
-        const errorMessage = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
-        if (errorMessage.includes('nonce') || errorMessage.includes('replacement')) {
-          console.warn("Nonce conflict detected, resetting nonce manager");
-          resetNonce().catch(console.error);
-        }
-      });
+      syncClient
+        .sendRawTransactionSync({
+          serializedTransaction,
+        })
+        .then((_receipt) => {
+          console.log(`Batch completed with ${pixels.length} pixels`);
 
+          // Remove confirmed pixels from user overlay (they'll appear via blockchain events)
+          removeUserPixels(pixels);
+        })
+        .catch((error) => {
+          console.error("Batch transaction error:", error);
+
+          // Check if it's a nonce-related error
+          const errorMessage =
+            error instanceof Error
+              ? error.message.toLowerCase()
+              : String(error).toLowerCase();
+          if (
+            errorMessage.includes("nonce") ||
+            errorMessage.includes("replacement")
+          ) {
+            console.warn("Nonce conflict detected, resetting nonce manager");
+            resetNonce().catch(console.error);
+          }
+        });
     } catch (e) {
       console.error("Transaction signing error:", e);
       const accountBalance = formatEther(balance?.data?.value ?? 0n);
@@ -182,7 +200,7 @@ export function DrawingCanvas() {
     if (currentBatchRef.current.length > 0) {
       const batch = [...currentBatchRef.current];
       currentBatchRef.current = [];
-      
+
       // Send batch - pixels stay in user overlay until transaction confirms
       sendBatch(batch);
     }
@@ -191,7 +209,7 @@ export function DrawingCanvas() {
   const addPixelToBatch = (pixel: TransactionQueue) => {
     // Add to current batch
     currentBatchRef.current.push(pixel);
-    
+
     // Start timer if not already running
     if (!batchIntervalRef.current) {
       batchIntervalRef.current = setTimeout(() => {
@@ -208,20 +226,26 @@ export function DrawingCanvas() {
       timestamp: Date.now(),
       opacity: 1.0,
     };
-    
-    setUserPixels(prev => {
+
+    setUserPixels((prev) => {
       // Remove any existing pixel at the same coordinate
-      const filtered = prev.filter(p => !(p.x === pixel.x && p.y === pixel.y));
+      const filtered = prev.filter(
+        (p) => !(p.x === pixel.x && p.y === pixel.y)
+      );
       return [...filtered, pixelWithTimestamp];
     });
   };
 
   const removeUserPixels = (pixels: TransactionQueue[]) => {
-    setUserPixels(prev => prev.filter(userPixel => 
-      !pixels.some(batchPixel => 
-        batchPixel.x === userPixel.x && batchPixel.y === userPixel.y
+    setUserPixels((prev) =>
+      prev.filter(
+        (userPixel) =>
+          !pixels.some(
+            (batchPixel) =>
+              batchPixel.x === userPixel.x && batchPixel.y === userPixel.y
+          )
       )
-    ));
+    );
   };
 
   // Buffer 2 (Source of Truth) Management
@@ -232,10 +256,10 @@ export function DrawingCanvas() {
     b?: number;
   }) => {
     if (!props?.indices) return;
-    
-    console.log('Blockchain update received:', {
+
+    console.log("Blockchain update received:", {
       indices: props.indices,
-      color: { r: props.r, g: props.g, b: props.b }
+      color: { r: props.r, g: props.g, b: props.b },
     });
 
     const newPixels = props.indices.map((index) => {
@@ -252,63 +276,69 @@ export function DrawingCanvas() {
     // Show transaction complete toast (only on desktop)
     if (!isMobile) {
       const pixelCount = props.indices.length;
-      toast.custom((t) => (
-        <div
-          className="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg"
-          style={{
-            backgroundColor: 'var(--purple-10)',
-            color: 'var(--purple-contrast)',
-          }}
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M10 2.5L12.5 7.5L17.5 8.5L14 12L15 17.5L10 15L5 17.5L6 12L2.5 8.5L7.5 7.5L10 2.5Z"
-              fill="currentColor"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <span className="font-medium">
-            Transaction complete! {pixelCount} pixel{pixelCount > 1 ? 's' : ''} painted
-          </span>
-          <button
-            onClick={() => toast.dismiss(t)}
-            className="ml-auto text-current opacity-70 hover:opacity-100 transition-opacity"
+      toast.custom(
+        (t) => (
+          <div
+            className="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg"
+            style={{
+              backgroundColor: "var(--purple-10)",
+              color: "var(--purple-contrast)",
+            }}
           >
             <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
+              width="20"
+              height="20"
+              viewBox="0 0 20 20"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
               <path
-                d="M12 4L4 12M4 4L12 12"
+                d="M10 2.5L12.5 7.5L17.5 8.5L14 12L15 17.5L10 15L5 17.5L6 12L2.5 8.5L7.5 7.5L10 2.5Z"
+                fill="currentColor"
                 stroke="currentColor"
                 strokeWidth="1.5"
-                strokeLinecap="round"
+                strokeLinejoin="round"
               />
             </svg>
-          </button>
-        </div>
-      ), {
-        duration: 3000,
-      });
+            <span className="font-medium">
+              Transaction complete! {pixelCount} pixel
+              {pixelCount > 1 ? "s" : ""} painted
+            </span>
+            <button
+              onClick={() => toast.dismiss(t)}
+              className="ml-auto text-current opacity-70 hover:opacity-100 transition-opacity"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M12 4L4 12M4 4L12 12"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          </div>
+        ),
+        {
+          duration: 3000,
+        }
+      );
     }
 
     // Immediately update Buffer 2 (source of truth)
-    setBlockchainPixels(prev => {
+    setBlockchainPixels((prev) => {
       const updated = [...prev];
-      newPixels.forEach(newPixel => {
+      newPixels.forEach((newPixel) => {
         // Remove any existing pixel at the same coordinate and add new one
-        const index = updated.findIndex(p => p.x === newPixel.x && p.y === newPixel.y);
+        const index = updated.findIndex(
+          (p) => p.x === newPixel.x && p.y === newPixel.y
+        );
         if (index >= 0) {
           updated[index] = newPixel;
         } else {
@@ -317,7 +347,7 @@ export function DrawingCanvas() {
       });
       return updated;
     });
-    
+
     // Remove corresponding pixels from user overlay (they're now confirmed)
     removeUserPixels(newPixels);
   };
@@ -325,17 +355,18 @@ export function DrawingCanvas() {
   // Fade user pixels over time
   const updateUserPixelOpacity = () => {
     const now = Date.now();
-    setUserPixels(prev => {
-      const updated = prev.map(pixel => {
-        const age = now - pixel.timestamp;
-        const opacity = Math.max(0, 1 - (age / USER_PIXEL_FADE_DURATION));
-        return { ...pixel, opacity };
-      }).filter(pixel => pixel.opacity > 0); // Remove fully faded pixels
-      
+    setUserPixels((prev) => {
+      const updated = prev
+        .map((pixel) => {
+          const age = now - pixel.timestamp;
+          const opacity = Math.max(0, 1 - age / USER_PIXEL_FADE_DURATION);
+          return { ...pixel, opacity };
+        })
+        .filter((pixel) => pixel.opacity > 0); // Remove fully faded pixels
+
       return updated;
     });
   };
-
 
   function getCoordinatesFromIndex(index: number) {
     const canvas = canvasRef.current;
@@ -359,7 +390,6 @@ export function DrawingCanvas() {
     return { x, y };
   }
 
-
   function startDrawing({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current;
 
@@ -380,10 +410,10 @@ export function DrawingCanvas() {
 
     // Add to user overlay (Buffer 1)
     addUserPixel(pixel);
-    
+
     // Add to batch for processing
     addPixelToBatch(pixel);
-    
+
     setIsDrawing(true);
   }
 
@@ -391,13 +421,13 @@ export function DrawingCanvas() {
     if (!contextRef.current) return;
     contextRef.current.closePath();
     setIsDrawing(false);
-    
+
     // Clear the batch timer and immediately flush current batch
     if (batchIntervalRef.current) {
       clearTimeout(batchIntervalRef.current);
       batchIntervalRef.current = null;
     }
-    
+
     // Immediately send any pixels that are waiting
     flushCurrentBatch();
   }
@@ -409,7 +439,7 @@ export function DrawingCanvas() {
 
     if (!canvas) return;
     const { x, y } = getCoordinates(canvas, nativeEvent);
-    
+
     // Do not remove this -- this will prevent from adding duplicating coordinates in txQueue
     if (lastTx.x === x && lastTx.y === y) return;
 
@@ -425,7 +455,7 @@ export function DrawingCanvas() {
 
     // Add to user overlay (Buffer 1)
     addUserPixel(pixel);
-    
+
     // Add to batch for processing
     addPixelToBatch(pixel);
   }
@@ -447,7 +477,7 @@ export function DrawingCanvas() {
     if (!contextRef.current) return;
     contextRef.current.beginPath();
     contextRef.current.moveTo(x, y);
-    
+
     const pixel = {
       x,
       y,
@@ -458,10 +488,10 @@ export function DrawingCanvas() {
 
     // Add to user overlay (Buffer 1)
     addUserPixel(pixel);
-    
+
     // Add to batch for processing
     addPixelToBatch(pixel);
-    
+
     setIsDrawing(true);
   }
 
@@ -489,7 +519,7 @@ export function DrawingCanvas() {
 
     // Add to user overlay (Buffer 1)
     addUserPixel(pixel);
-    
+
     // Add to batch for processing
     addPixelToBatch(pixel);
   }
@@ -516,14 +546,14 @@ export function DrawingCanvas() {
   // Initialize Buffer 2 (source of truth) from blockchain data
   const initializeBuffer2 = () => {
     if (!buffer2Ref.current || !tiles.data) return;
-    
+
     const canvas = buffer2Ref.current;
     const context = canvas.getContext("2d");
     if (!context) return;
-    
+
     const imageData = context.createImageData(canvasSize, canvasSize);
     const data = imageData.data;
-    
+
     const rBuffer = Object.values((tiles.data as number[])[0]);
     const gBuffer = Object.values((tiles.data as number[])[1]);
     const bBuffer = Object.values((tiles.data as number[])[2]);
@@ -549,27 +579,27 @@ export function DrawingCanvas() {
   // Render Buffer 1 (user overlay)
   const renderBuffer1 = () => {
     if (!buffer1Ref.current) return;
-    
+
     const canvas = buffer1Ref.current;
     const context = canvas.getContext("2d");
     if (!context) return;
-    
+
     // Clear the overlay
     context.clearRect(0, 0, canvasSize, canvasSize);
-    
+
     const imageData = context.createImageData(canvasSize, canvasSize);
     const data = imageData.data;
-    
+
     // Initialize as transparent
     for (let i = 0; i < data.length; i += 4) {
       data[i + 3] = 0; // Alpha = 0 (transparent)
     }
-    
+
     // Apply user pixels with fading
     userPixels.forEach((pixel) => {
       const index = coordToBufferIndex(pixel.x, pixel.y);
       const pixelIndex = index * 4;
-      
+
       if (pixelIndex >= 0 && pixelIndex < data.length - 3) {
         data[pixelIndex] = pixel.r; // R
         data[pixelIndex + 1] = pixel.g; // G
@@ -577,23 +607,24 @@ export function DrawingCanvas() {
         data[pixelIndex + 3] = Math.floor(pixel.opacity * 255); // Alpha with fade
       }
     });
-    
+
     context.putImageData(imageData, 0, 0);
   };
 
   // Composite both buffers to main canvas
   const renderCanvas = () => {
-    if (!canvasRef.current || !buffer1Ref.current || !buffer2Ref.current) return;
-    
+    if (!canvasRef.current || !buffer1Ref.current || !buffer2Ref.current)
+      return;
+
     const mainContext = canvasRef.current.getContext("2d");
     if (!mainContext) return;
-    
+
     // Clear main canvas
     mainContext.clearRect(0, 0, canvasSize, canvasSize);
-    
+
     // Draw Buffer 2 (source of truth) first
     mainContext.drawImage(buffer2Ref.current, 0, 0);
-    
+
     // Draw Buffer 1 (user overlay) on top
     mainContext.drawImage(buffer1Ref.current, 0, 0);
   };
@@ -644,13 +675,13 @@ export function DrawingCanvas() {
     contextRef.current = context;
 
     // Initialize Buffer 1 (user overlay)
-    const buffer1 = document.createElement('canvas');
+    const buffer1 = document.createElement("canvas");
     buffer1.width = canvasSize;
     buffer1.height = canvasSize;
     buffer1Ref.current = buffer1;
 
     // Initialize Buffer 2 (source of truth)
-    const buffer2 = document.createElement('canvas');
+    const buffer2 = document.createElement("canvas");
     buffer2.width = canvasSize;
     buffer2.height = canvasSize;
     buffer2Ref.current = buffer2;
@@ -670,7 +701,7 @@ export function DrawingCanvas() {
   return (
     <div
       className={cn(
-        "relative flex-1 flex flex-col gap-2 py-3 items-center justify-center h-full w-full bg-purple-2/20 dark:bg-accent/35"
+        "relative flex-1 flex flex-col gap-2 py-3 items-center justify-center h-full w-full bg-accent dark:bg-accent/35"
       )}
     >
       <HashLoader
@@ -688,7 +719,7 @@ export function DrawingCanvas() {
         onTouchStart={touchStart}
         onTouchMove={touchMove}
         onTouchEnd={stopDrawing}
-        className="cursor-crosshair touch-none aspect-square w-full max-w-[820px] max-h-[820px] rounded-lg shadow-md dark:shadow-white bg-white dark:bg-gray-2"
+        className="cursor-crosshair touch-none aspect-square w-full max-w-[820px] max-h-[820px] rounded-sm border shadow-lg border-border-primary bg-foreground"
         style={{
           imageRendering: "pixelated",
         }}
