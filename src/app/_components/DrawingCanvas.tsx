@@ -14,6 +14,7 @@ import { encodeFunctionData, parseAbiItem } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { useBalance, useReadContract } from "wagmi";
 import canvasAbi from "../../../abi/canvasAbi.json";
+import { FundWallet } from "./FundWallet";
 
 type PixelWithTimestamp = TransactionQueue & {
   timestamp: number;
@@ -233,6 +234,7 @@ export function DrawingCanvas() {
             error instanceof Error
               ? error.message.toLowerCase()
               : String(error).toLowerCase();
+
           if (
             errorMessage.includes("nonce") ||
             errorMessage.includes("replacement")
@@ -241,11 +243,23 @@ export function DrawingCanvas() {
             resetNonce().catch(console.error);
           }
 
-          //  TODO: Add insufficient gas error
+          if (errorMessage.includes("insufficient")) {
+            console.warn("Insufficient Fund detected");
+            showModal({ title: "Fund your Wallet", content: <FundWallet /> });
+          }
         });
-    } catch (e) {
+    } catch (error) {
       console.error("Transaction signing error:", e);
-      //  TODO: Add insufficient gas error
+      // Check if it's a nonce-related error
+      const errorMessage =
+        error instanceof Error
+          ? error.message.toLowerCase()
+          : String(error).toLowerCase();
+
+      if (errorMessage.includes("insufficient")) {
+        console.warn("Insufficient Fund detected");
+        showModal({ title: "Fund your Wallet", content: <FundWallet /> });
+      }
     }
   };
 
