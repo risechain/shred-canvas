@@ -12,7 +12,7 @@ export function useNetworkConfig() {
       return {
         chain: riseStaging,
         contract: "0xa1a1Cd7aE065F6A0052F8dA439eC71d3dF627CE3" as Address,
-        wsIndexing: "wss://indexing.testnet.riselabs.xyz/ws",
+        wsIndexing: "wss://staging.riselabs.xyz/ws",
       };
     case "production":
     default:
