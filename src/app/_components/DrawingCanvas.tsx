@@ -249,7 +249,7 @@ export function DrawingCanvas() {
           }
         });
     } catch (error) {
-      console.error("Transaction signing error:", e);
+      console.error("Transaction signing error:", error);
       // Check if it's a nonce-related error
       const errorMessage =
         error instanceof Error
