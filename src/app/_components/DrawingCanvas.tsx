@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { useNetworkConfig } from "@/hooks/contract/useNetworkConfig";
 import { useWallet } from "@/hooks/contract/useWallet";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useModal } from "@/hooks/useModal";
@@ -9,13 +10,10 @@ import { TransactionQueue } from "@/providers/PageProvider";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { HashLoader } from "react-spinners";
 import { toast } from "sonner";
-import { encodeFunctionData, formatEther, parseAbiItem } from "viem";
+import { encodeFunctionData, parseAbiItem } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { riseTestnet } from "viem/chains";
 import { useBalance, useReadContract } from "wagmi";
 import canvasAbi from "../../../abi/canvasAbi.json";
-import { FundWallet } from "./FundWallet";
-import { useContractAddress } from "@/hooks/contract/useContractAddress";
 
 type PixelWithTimestamp = TransactionQueue & {
   timestamp: number;
@@ -26,7 +24,6 @@ const USER_PIXEL_FADE_DURATION = 3000; // 3 seconds
 
 export function DrawingCanvas() {
   const canvasSize = 64;
-  const gasAllowanceRqmt = 0.000000008;
 
   // Canvas refs for double buffering
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -50,10 +47,9 @@ export function DrawingCanvas() {
   const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const BATCH_TIMEOUT_MS = 100;
 
-  const CONTRACT_ADDRESS = useContractAddress();
+  const { contract, chain } = useNetworkConfig();
 
-  const { brushColor, brushSize, rgbValues, setCompletedTx, setPendingTx } =
-    usePage();
+  const { brushColor, brushSize, rgbValues, setPendingTx } = usePage();
 
   const { showModal } = useModal();
 
@@ -87,7 +83,7 @@ export function DrawingCanvas() {
 
   const tiles = useReadContract({
     abi: canvasAbi,
-    address: CONTRACT_ADDRESS,
+    address: contract,
     functionName: "getTiles",
   });
 
@@ -151,13 +147,13 @@ export function DrawingCanvas() {
       }
 
       const serializedTransaction = await account.signTransaction({
-        to: CONTRACT_ADDRESS,
+        to: contract,
         data,
         nonce,
         gas: BigInt(90_000 * 20_000 * tileIndices.length),
         gasPrice: BigInt(100),
         value: BigInt(0),
-        chainId: riseTestnet.id,
+        chainId: chain.id,
       });
 
       // Send transaction concurrently (don't await receipt)
@@ -170,6 +166,64 @@ export function DrawingCanvas() {
 
           // Remove confirmed pixels from user overlay (they'll appear via blockchain events)
           removeUserPixels(pixels);
+
+          // Show transaction complete toast (only on desktop)
+          if (!isMobile) {
+            const pixelCount = tileIndices.length;
+            toast.custom(
+              (t) => (
+                <div
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg"
+                  style={{
+                    backgroundColor: "var(--purple-10)",
+                    color: "var(--purple-contrast)",
+                  }}
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M10 2.5L12.5 7.5L17.5 8.5L14 12L15 17.5L10 15L5 17.5L6 12L2.5 8.5L7.5 7.5L10 2.5Z"
+                      fill="currentColor"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <span className="font-medium">
+                    Transaction complete! {pixelCount} pixel
+                    {pixelCount > 1 ? "s" : ""} painted
+                  </span>
+                  <button
+                    onClick={() => toast.dismiss(t)}
+                    className="ml-auto text-current opacity-70 hover:opacity-100 transition-opacity"
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M12 4L4 12M4 4L12 12"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              ),
+              {
+                duration: 3000,
+              }
+            );
+          }
         })
         .catch((error) => {
           console.error("Batch transaction error:", error);
@@ -186,13 +240,12 @@ export function DrawingCanvas() {
             console.warn("Nonce conflict detected, resetting nonce manager");
             resetNonce().catch(console.error);
           }
+
+          //  TODO: Add insufficient gas error
         });
     } catch (e) {
       console.error("Transaction signing error:", e);
-      const accountBalance = formatEther(balance?.data?.value ?? 0n);
-      if (gasAllowanceRqmt > Number(accountBalance)) {
-        showModal({ content: <FundWallet />, title: "Embedded Wallet" });
-      }
+      //  TODO: Add insufficient gas error
     }
   };
 
@@ -272,64 +325,6 @@ export function DrawingCanvas() {
         b: props.b ?? 0,
       };
     });
-
-    // Show transaction complete toast (only on desktop)
-    if (!isMobile) {
-      const pixelCount = props.indices.length;
-      toast.custom(
-        (t) => (
-          <div
-            className="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg"
-            style={{
-              backgroundColor: "var(--purple-10)",
-              color: "var(--purple-contrast)",
-            }}
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 20 20"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M10 2.5L12.5 7.5L17.5 8.5L14 12L15 17.5L10 15L5 17.5L6 12L2.5 8.5L7.5 7.5L10 2.5Z"
-                fill="currentColor"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span className="font-medium">
-              Transaction complete! {pixelCount} pixel
-              {pixelCount > 1 ? "s" : ""} painted
-            </span>
-            <button
-              onClick={() => toast.dismiss(t)}
-              className="ml-auto text-current opacity-70 hover:opacity-100 transition-opacity"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M12 4L4 12M4 4L12 12"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </button>
-          </div>
-        ),
-        {
-          duration: 3000,
-        }
-      );
-    }
 
     // Immediately update Buffer 2 (source of truth)
     setBlockchainPixels((prev) => {

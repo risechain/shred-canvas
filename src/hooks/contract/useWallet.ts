@@ -6,12 +6,13 @@ import {
 } from "shreds/viem";
 import { Account, createPublicClient, createWalletClient, http } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { riseTestnet } from "viem/chains";
+import { useNetworkConfig } from "./useNetworkConfig";
 
 const WALLET_STORAGE_KEY = "paint_canvas_wallet";
 
 export function useWallet() {
   const [isResetting, setIsResetting] = useState<boolean>(false);
+  const { chain, wsIndexing } = useNetworkConfig();
 
   function getStoredWallet() {
     if (typeof window !== "undefined") {
@@ -37,7 +38,7 @@ export function useWallet() {
   function generateWalletClient(account: `0x${string}` | Account) {
     const walletClient = createWalletClient({
       account,
-      chain: riseTestnet,
+      chain,
       transport: http(),
     });
     return walletClient;
@@ -65,21 +66,33 @@ export function useWallet() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isResetting]);
 
-  const shredClient = useMemo(() => createPublicShredClient({
-    chain: riseTestnet,
-    transport: shredsWebSocket('wss://indexing.testnet.riselabs.xyz/ws'), // Replace with your Shreds WebSocket endpoint
-  }), []);
+  const shredClient = useMemo(
+    () =>
+      createPublicShredClient({
+        chain,
+        transport: shredsWebSocket(wsIndexing), // Replace with your Shreds WebSocket endpoint
+      }),
+    []
+  );
 
-  const syncClient = useMemo(() => createPublicSyncClient({
-    chain: riseTestnet,
-    // @ts-expect-error Shreds SDK type incompatibility with standard transport
-    transport: http(),
-  }), []);
+  const syncClient = useMemo(
+    () =>
+      createPublicSyncClient({
+        chain,
+        // @ts-expect-error Shreds SDK type incompatibility with standard transport
+        transport: http(),
+      }),
+    []
+  );
 
-  const publicClient = useMemo(() => createPublicClient({
-    chain: riseTestnet,
-    transport: http(),
-  }), []);
+  const publicClient = useMemo(
+    () =>
+      createPublicClient({
+        chain,
+        transport: http(),
+      }),
+    []
+  );
 
   // Get the account from stored wallet
   const account = useMemo(() => {
