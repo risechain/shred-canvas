@@ -12,7 +12,7 @@ const WALLET_STORAGE_KEY = "paint_canvas_wallet";
 
 export function useWallet() {
   const [isResetting, setIsResetting] = useState<boolean>(false);
-  const { chain } = useNetworkConfig();
+  const { chain, wsIndexing } = useNetworkConfig();
 
   function getStoredWallet() {
     if (typeof window !== "undefined") {
@@ -70,7 +70,7 @@ export function useWallet() {
     () =>
       createPublicShredClient({
         chain,
-        transport: shredsWebSocket("wss://indexing.testnet.riselabs.xyz/ws"), // Replace with your Shreds WebSocket endpoint
+        transport: shredsWebSocket(wsIndexing), // Replace with your Shreds WebSocket endpoint
       }),
     []
   );

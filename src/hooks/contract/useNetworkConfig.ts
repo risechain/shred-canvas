@@ -12,12 +12,14 @@ export function useNetworkConfig() {
       return {
         chain: riseStaging,
         contract: "0xa1a1Cd7aE065F6A0052F8dA439eC71d3dF627CE3" as Address,
+        wsIndexing: "wss://indexing.staging.riselabs.xyz/ws",
       };
     case "production":
     default:
       return {
         chain: riseTestnet,
         contract: "0xF8557708e908CBbBD3DB3581135844d49d61E2a8" as Address,
+        wsIndexing: "wss://indexing.testnet.riselabs.xyz/ws",
       };
   }
 }
