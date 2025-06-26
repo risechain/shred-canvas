@@ -52,8 +52,7 @@ export function DrawingCanvas() {
 
   const CONTRACT_ADDRESS = useContractAddress();
 
-  const { brushColor, brushSize, rgbValues, setCompletedTx, setPendingTx } =
-    usePage();
+  const { brushColor, brushSize, rgbValues, setPendingTx } = usePage();
 
   const { showModal } = useModal();
 
