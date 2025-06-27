@@ -6,6 +6,7 @@ error OutOfBoundsX();
 error OutOfBoundsY();
 error ValueOutOfBounds();
 error TileIndexOutOfBounds();
+error WipeOnCooldown();
 
 /// @title PixelCanvas
 /// @notice A contract that allows users to paint pixels on a canvas with RGB values
@@ -18,9 +19,14 @@ contract PixelCanvas {
     uint8[] public rBuffer;
     uint8[] public gBuffer;
     uint8[] public bBuffer;
+    
+    // Wipe functionality
+    uint256 public lastWipeTimestamp;
+    uint256 public constant WIPE_COOLDOWN = 1 hours;
 
     event tilePainted(uint256 x, uint256 y, uint8 r, uint8 g, uint8 b);
     event tilesPainted(uint256[] indices, uint8 r, uint8 g, uint8 b);
+    event canvasWiped(address indexed wiper, uint256 timestamp);
 
     /// @notice Initialize the canvas with given dimensions
     /// @param _width Width of the canvas
@@ -101,5 +107,32 @@ contract PixelCanvas {
     /// @return b Array of blue values
     function getTiles() public view returns (uint8[] memory, uint8[] memory, uint8[] memory) {
         return (rBuffer, gBuffer, bBuffer);
+    }
+    
+    /// @notice Wipe the entire canvas to white (255, 255, 255)
+    /// @dev Can only be called once per hour
+    function wipeCanvas() public {
+        if (lastWipeTimestamp != 0 && block.timestamp < lastWipeTimestamp + WIPE_COOLDOWN) {
+            revert WipeOnCooldown();
+        }
+        
+        lastWipeTimestamp = block.timestamp;
+        
+        // Set all pixels to white
+        for (uint256 i = 0; i < size; i++) {
+            rBuffer[i] = 255;
+            gBuffer[i] = 255;
+            bBuffer[i] = 255;
+        }
+        
+        emit canvasWiped(msg.sender, block.timestamp);
+    }
+    
+    /// @notice Get the timestamp when canvas can be wiped again
+    /// @return timestamp The timestamp when next wipe is available (0 if available now)
+    function getNextWipeTime() public view returns (uint256) {
+        if (lastWipeTimestamp == 0) return 0;
+        uint256 nextWipe = lastWipeTimestamp + WIPE_COOLDOWN;
+        return block.timestamp >= nextWipe ? 0 : nextWipe;
     }
 }

@@ -17,10 +17,7 @@ export class NonceManager {
       
       this.nonces.set(address, currentNonce);
       this.initialized.add(address);
-      
-      console.log(`NonceManager initialized for ${address} with nonce: ${currentNonce}`);
     } catch (error) {
-      console.error('Failed to initialize nonce manager:', error);
       throw error;
     }
   }
@@ -36,7 +33,6 @@ export class NonceManager {
     // Increment for next use
     this.nonces.set(address, currentNonce + 1);
     
-    console.log(`NonceManager: Using nonce ${nextNonce} for ${address}`);
     return nextNonce;
   }
 

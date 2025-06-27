@@ -72,13 +72,9 @@ export function DrawingCanvas() {
     isNonceInitialized: nonceInitialized,
   } = useNonceManager(wallet.account?.address, publicClient);
 
-  // Log nonce initialization status
+  // Nonce initialization status tracking
   useEffect(() => {
-    console.log("Nonce manager status:", {
-      address: wallet.account?.address,
-      nonceInitialized,
-      publicClientAvailable: !!publicClient,
-    });
+    // Silent status tracking for nonce manager
   }, [wallet.account?.address, nonceInitialized, publicClient]);
 
   const tiles = useReadContract({
@@ -128,10 +124,6 @@ export function DrawingCanvas() {
     try {
       // Get the next nonce for this transaction
       const nonce = getNextNonce();
-      console.log(
-        `Sending batch of ${pixels.length} pixels with nonce:`,
-        nonce
-      );
 
       const data = encodeFunctionData({
         abi: canvasAbi,
@@ -159,8 +151,6 @@ export function DrawingCanvas() {
           serializedTransaction,
         })
         .then((_receipt) => {
-          console.log(`Batch completed with ${pixels.length} pixels`);
-
           // Remove confirmed pixels from user overlay (they'll appear via blockchain events)
           removeUserPixels(pixels);
 
@@ -227,8 +217,6 @@ export function DrawingCanvas() {
           }
         })
         .catch((error) => {
-          console.error("Batch transaction error:", error);
-
           // Check if it's a nonce-related error
           const errorMessage =
             error instanceof Error
@@ -239,17 +227,14 @@ export function DrawingCanvas() {
             errorMessage.includes("nonce") ||
             errorMessage.includes("replacement")
           ) {
-            console.warn("Nonce conflict detected, resetting nonce manager");
-            resetNonce().catch(console.error);
+            resetNonce().catch(() => {});
           }
 
           if (errorMessage.includes("insufficient")) {
-            console.warn("Insufficient Fund detected");
             showModal({ title: "Fund your Wallet", content: <FundWallet /> });
           }
         });
     } catch (error) {
-      console.error("Transaction signing error:", error);
       // Check if it's a nonce-related error
       const errorMessage =
         error instanceof Error
@@ -257,7 +242,6 @@ export function DrawingCanvas() {
           : String(error).toLowerCase();
 
       if (errorMessage.includes("insufficient")) {
-        console.warn("Insufficient Fund detected");
         showModal({ title: "Fund your Wallet", content: <FundWallet /> });
       }
     }
@@ -324,10 +308,7 @@ export function DrawingCanvas() {
   }) => {
     if (!props?.indices) return;
 
-    console.log("Blockchain update received:", {
-      indices: props.indices,
-      color: { r: props.r, g: props.g, b: props.b },
-    });
+    // Blockchain update received
 
     const newPixels = props.indices.map((index) => {
       const coordinate = getCoordinatesFromIndex(Number(index));

@@ -19,7 +19,7 @@ export function useNetworkConfig() {
     default:
       return {
         chain: riseTestnet,
-        contract: "0xF8557708e908CBbBD3DB3581135844d49d61E2a8" as Address,
+        contract: "0xc7c14Cf3094A9Bb8770148DD18494944469Cc5D8" as Address,
         wsIndexing: "wss://indexing.testnet.riselabs.xyz/ws",
         canvasSize: 64,
       };
