@@ -69,7 +69,7 @@ export function DrawingCanvas() {
   const {
     getNextNonce,
     resetNonce,
-    isInitialized: nonceInitialized,
+    isNonceInitialized: nonceInitialized,
   } = useNonceManager(wallet.account?.address, publicClient);
 
   // Log nonce initialization status

@@ -1,11 +1,21 @@
-import { useEffect, useRef, useState } from 'react';
-import { Address, PublicClient } from 'viem';
-import { NonceManager } from '@/lib/NonceManager';
+import { useEffect, useRef, useState } from "react";
+import { Address, PublicClient } from "viem";
+import { NonceManager } from "@/lib/NonceManager";
+import { usePage } from "./usePage";
 
-export function useNonceManager(address: Address | undefined, publicClient: PublicClient | undefined) {
+export function useNonceManager(
+  address: Address | undefined,
+  publicClient: PublicClient | undefined
+) {
   const nonceManagerRef = useRef<NonceManager | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  /**
+   * move these states to global state as custom-hooks do not retain state
+   * when being accessed from a different component
+   */
+  const { isNonceInitialized, setIsNonceInitialized, setLocalNonce } =
+    usePage();
 
   // Initialize the nonce manager singleton
   useEffect(() => {
@@ -17,7 +27,7 @@ export function useNonceManager(address: Address | undefined, publicClient: Publ
   // Initialize nonce for the current address
   useEffect(() => {
     if (!address || !publicClient || !nonceManagerRef.current) {
-      setIsInitialized(false);
+      setIsNonceInitialized(false);
       return;
     }
 
@@ -25,32 +35,40 @@ export function useNonceManager(address: Address | undefined, publicClient: Publ
       try {
         setError(null);
         await nonceManagerRef.current!.initialize(address, publicClient);
-        setIsInitialized(true);
+        setIsNonceInitialized(true);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to initialize nonce manager');
-        setIsInitialized(false);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to initialize nonce manager"
+        );
+        setIsNonceInitialized(false);
       }
     };
 
     if (!nonceManagerRef.current.isInitialized(address)) {
       initializeNonce();
     } else {
-      setIsInitialized(true);
+      setIsNonceInitialized(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, publicClient]);
 
   const getNextNonce = () => {
-    if (!address || !nonceManagerRef.current || !isInitialized) {
-      throw new Error('NonceManager not ready');
+    if (!address || !nonceManagerRef.current || !isNonceInitialized) {
+      throw new Error("NonceManager not ready");
     }
     return nonceManagerRef.current.getNextNonce(address);
   };
 
   const getCurrentNonce = () => {
-    if (!address || !nonceManagerRef.current || !isInitialized) {
+    if (!address || !nonceManagerRef.current || !isNonceInitialized) {
       return 0;
     }
-    return nonceManagerRef.current.getCurrentNonce(address);
+    const nonce = nonceManagerRef.current.getCurrentNonce(address);
+    setLocalNonce(nonce);
+
+    return nonce;
   };
 
   const resetNonce = async () => {
@@ -60,9 +78,11 @@ export function useNonceManager(address: Address | undefined, publicClient: Publ
     try {
       setError(null);
       await nonceManagerRef.current.reset(address, publicClient);
-      setIsInitialized(true);
+      setIsNonceInitialized(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to reset nonce manager');
+      setError(
+        err instanceof Error ? err.message : "Failed to reset nonce manager"
+      );
     }
   };
 
@@ -70,7 +90,7 @@ export function useNonceManager(address: Address | undefined, publicClient: Publ
     getNextNonce,
     getCurrentNonce,
     resetNonce,
-    isInitialized,
+    isNonceInitialized,
     error,
   };
 }

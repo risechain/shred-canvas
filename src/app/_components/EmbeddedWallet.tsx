@@ -7,16 +7,15 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui";
+import { useNetworkConfig } from "@/hooks/contract/useNetworkConfig";
 import { useWallet } from "@/hooks/contract/useWallet";
 import { usePage } from "@/hooks/usePage";
-import { useNonceManager } from "@/hooks/useNonceManager";
 import { getMaskedAddress, handleCopy } from "@/lib/utils";
 import { CopyIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { formatEther } from "viem";
 import { useBalance, useTransactionCount } from "wagmi";
-import { useNetworkConfig } from "@/hooks/contract/useNetworkConfig";
 
 export function EmbeddedWalletContent() {
   const { setIsResetting, resetWalletClient, wallet, getStoredWallet } =
@@ -29,6 +28,8 @@ export function EmbeddedWalletContent() {
     batchSize,
     setBatchSize,
     setProcessingType,
+    localNonce,
+    isNonceInitialized: nonceInitialized,
   } = usePage();
 
   const { chain } = useNetworkConfig();
@@ -39,12 +40,6 @@ export function EmbeddedWalletContent() {
   });
 
   const transaction = useTransactionCount({ address: wallet.account.address });
-
-  // Get nonce manager for displaying local nonce
-  const { getCurrentNonce, isInitialized: nonceInitialized } = useNonceManager(
-    wallet.account?.address,
-    undefined
-  );
 
   const [inputType, setInputType] = useState<"password" | "text">("password");
 
@@ -149,7 +144,7 @@ export function EmbeddedWalletContent() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm md:text-md text-text-secondary">Local Nonce:</p>
           <p className="text-sm md:text-md">
-            {nonceInitialized ? getCurrentNonce() : "Not initialized"}
+            {nonceInitialized ? localNonce : "Not initialized"}
           </p>
         </div>
 

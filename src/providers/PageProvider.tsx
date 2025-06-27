@@ -57,6 +57,12 @@ export type PageContextType = {
 
   realTimeTx: TransactionQueue[];
   setRealTimeTx: (props: TransactionQueue[]) => void;
+
+  isNonceInitialized: boolean;
+  setIsNonceInitialized: (value: boolean) => void;
+
+  localNonce: number;
+  setLocalNonce: Dispatch<SetStateAction<number>>;
 };
 
 const initialState: PageContextType = {
@@ -89,6 +95,12 @@ const initialState: PageContextType = {
 
   realTimeTx: [],
   setRealTimeTx: () => {},
+
+  isNonceInitialized: false,
+  setIsNonceInitialized: () => {},
+
+  localNonce: 0,
+  setLocalNonce: () => {},
 };
 
 export const PageContext = createContext<PageContextType>(initialState);
@@ -117,6 +129,10 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const [realTimeTx, setRealTimeTx] = useState<TransactionQueue[]>([]);
 
+  const [isNonceInitialized, setIsNonceInitialized] = useState<boolean>(false);
+  const [localNonce, setLocalNonce] = useState<number>(20);
+
+  // TODO: Break this into smaller chunks
   const providerValue = useMemo(() => {
     return {
       view,
@@ -148,6 +164,12 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
 
       realTimeTx,
       setRealTimeTx,
+
+      isNonceInitialized,
+      setIsNonceInitialized,
+
+      localNonce,
+      setLocalNonce,
     };
   }, [
     view,
@@ -160,6 +182,8 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
     completedTx,
     batchSize,
     realTimeTx,
+    isNonceInitialized,
+    localNonce,
   ]);
 
   useEffect(() => {
