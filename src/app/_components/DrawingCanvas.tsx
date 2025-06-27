@@ -48,7 +48,8 @@ export function DrawingCanvas() {
 
   const { contract, chain, canvasSize } = useNetworkConfig();
 
-  const { brushColor, brushSize, rgbValues, setPendingTx } = usePage();
+  const { brushColor, brushSize, rgbValues, setPendingTx, setCompletedTx } =
+    usePage();
 
   const { showModal } = useModal();
 
@@ -166,6 +167,10 @@ export function DrawingCanvas() {
           // Show transaction complete toast (only on desktop)
           if (!isMobile) {
             const pixelCount = tileIndices.length;
+            setCompletedTx((prev: number) => {
+              return prev + pixelCount;
+            });
+
             toast.custom(
               (t) => (
                 <div
