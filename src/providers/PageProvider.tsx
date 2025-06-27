@@ -1,4 +1,11 @@
-import { createContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  Dispatch,
+  SetStateAction,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 export type View = "grid" | "carousel";
 
@@ -37,10 +44,10 @@ export type PageContextType = {
   setBrushSize: (props: number) => void;
 
   pendingTx: number;
-  setPendingTx: (props: number) => void;
+  setPendingTx: Dispatch<SetStateAction<number>>;
 
   completedTx: number;
-  setCompletedTx: (props: number) => void;
+  setCompletedTx: Dispatch<SetStateAction<number>>;
 
   processingType: "batch" | "individual";
   setProcessingType: (props: "batch" | "individual") => void;
@@ -68,10 +75,10 @@ const initialState: PageContextType = {
   brushSize: 5,
   setBrushSize: () => {},
 
-  pendingTx: 5,
+  pendingTx: 0,
   setPendingTx: () => {},
 
-  completedTx: 5,
+  completedTx: 0,
   setCompletedTx: () => {},
 
   processingType: "batch",
@@ -104,9 +111,9 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
     b: 181,
   });
 
-  const [pendingTx, setPendingTx] = useState(0);
-  const [completedTx, setCompletedTx] = useState(0);
-  const [batchSize, setBatchSize] = useState(20);
+  const [pendingTx, setPendingTx] = useState<number>(0);
+  const [completedTx, setCompletedTx] = useState<number>(0);
+  const [batchSize, setBatchSize] = useState<number>(20);
 
   const [realTimeTx, setRealTimeTx] = useState<TransactionQueue[]>([]);
 

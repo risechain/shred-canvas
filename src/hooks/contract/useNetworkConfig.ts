@@ -11,8 +11,9 @@ export function useNetworkConfig() {
     case "test":
       return {
         chain: riseStaging,
-        contract: "0xa1a1Cd7aE065F6A0052F8dA439eC71d3dF627CE3" as Address,
+        contract: "0x0a8d0B15f68C49A8d3351F9D0e539375360D8e2D" as Address,
         wsIndexing: "wss://staging.riselabs.xyz/ws",
+        canvasSize: 32,
       };
     case "production":
     default:
@@ -20,6 +21,7 @@ export function useNetworkConfig() {
         chain: riseTestnet,
         contract: "0xF8557708e908CBbBD3DB3581135844d49d61E2a8" as Address,
         wsIndexing: "wss://indexing.testnet.riselabs.xyz/ws",
+        canvasSize: 64,
       };
   }
 }
