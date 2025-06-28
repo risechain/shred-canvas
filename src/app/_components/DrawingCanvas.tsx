@@ -41,6 +41,7 @@ export function DrawingCanvas() {
     x: 0,
     y: 0,
   });
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   // Concurrent transaction system
   const batchIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -78,6 +79,29 @@ export function DrawingCanvas() {
   useEffect(() => {
     // Silent status tracking for nonce manager
   }, [wallet.account?.address, nonceInitialized, publicClient]);
+
+  // Load notification preference from localStorage
+  useEffect(() => {
+    const savedPreference = localStorage.getItem("wipeCanvasNotifications");
+    if (savedPreference !== null) {
+      setNotificationsEnabled(savedPreference === "true");
+    }
+  }, []);
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Tab") {
+        event.preventDefault(); // Prevent default tab behavior
+        setCurrentTool(currentTool === "brush" ? "eyedropper" : "brush");
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [currentTool, setCurrentTool]);
 
   const { data: tilesData, refetch: refetchTiles } = useReadContract({
     abi: canvasAbi,
@@ -172,8 +196,8 @@ export function DrawingCanvas() {
           // Remove confirmed pixels from user overlay (they'll appear via blockchain events)
           removeUserPixels(pixels);
 
-          // Show transaction complete toast (only on desktop)
-          if (!isMobile) {
+          // Show transaction complete toast (only on desktop and if notifications enabled)
+          if (!isMobile && notificationsEnabled) {
             const pixelCount = tileIndices.length;
             setCompletedTx((prev: number) => {
               return prev + pixelCount;
