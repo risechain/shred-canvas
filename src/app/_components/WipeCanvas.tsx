@@ -101,7 +101,7 @@ export function WipeCanvas() {
         .sendRawTransactionSync({
           serializedTransaction,
         })
-        .then((_receipt) => {
+        .then(() => {
           toast.success("Canvas wiped successfully!", {
             duration: 5000,
           });
