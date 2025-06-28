@@ -10,9 +10,12 @@
     "update-projects": "update-projects.sh"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@fontsource/inter": "^5.2.5",
     "@fontsource/inter-tight": "^5.2.5",
     "@fontsource/space-grotesk": "^5.2.6",
+    "@mui/material": "^7.1.2",
     "@number-flow/react": "^0.5.9",
     "@radix-ui/react-avatar": "^1.1.9",
     "@radix-ui/react-checkbox": "^1.1.4",

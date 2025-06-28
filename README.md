@@ -1,5 +1,30 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Environment Configuration
+
+Copy the example environment file and configure your settings:
+
+```bash
+cp .env.example .env.local
+```
+
+The following environment variables are available:
+
+### General Configuration
+- `NEXT_PUBLIC_ENVIRONMENT` - Environment mode (`production`, `staging`, `local`, `test`)
+
+### Production Environment
+- `NEXT_PUBLIC_CONTRACT_ADDRESS` - Canvas contract address
+- `NEXT_PUBLIC_RPC_URL` - RPC endpoint URL
+- `NEXT_PUBLIC_RPC_URL_WSS` - WebSocket RPC URL
+- `NEXT_PUBLIC_CANVAS_SIZE` - Canvas size (64x64)
+
+### Staging Environment  
+- `NEXT_PUBLIC_CONTRACT_ADDRESS_STAGING` - Staging contract address
+- `NEXT_PUBLIC_RPC_URL_STAGING` - Staging RPC endpoint URL
+- `NEXT_PUBLIC_RPC_URL_WSS_STAGING` - Staging WebSocket RPC URL
+- `NEXT_PUBLIC_CANVAS_SIZE_STAGING` - Staging canvas size (32x32)
+
 ## Getting Started
 
 First, run the development server:

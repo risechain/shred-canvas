@@ -1,1 +1,462 @@
-[{"type":"constructor","inputs":[{"name":"_width","type":"uint256","internalType":"uint256"},{"name":"_height","type":"uint256","internalType":"uint256"}],"stateMutability":"nonpayable"},{"type":"function","name":"bBuffer","inputs":[{"name":"","type":"uint256","internalType":"uint256"}],"outputs":[{"name":"","type":"uint8","internalType":"uint8"}],"stateMutability":"view"},{"type":"function","name":"gBuffer","inputs":[{"name":"","type":"uint256","internalType":"uint256"}],"outputs":[{"name":"","type":"uint8","internalType":"uint8"}],"stateMutability":"view"},{"type":"function","name":"getTile","inputs":[{"name":"_x","type":"uint256","internalType":"uint256"},{"name":"_y","type":"uint256","internalType":"uint256"}],"outputs":[{"name":"","type":"uint8","internalType":"uint8"},{"name":"","type":"uint8","internalType":"uint8"},{"name":"","type":"uint8","internalType":"uint8"}],"stateMutability":"view"},{"type":"function","name":"getTiles","inputs":[],"outputs":[{"name":"","type":"uint8[]","internalType":"uint8[]"},{"name":"","type":"uint8[]","internalType":"uint8[]"},{"name":"","type":"uint8[]","internalType":"uint8[]"}],"stateMutability":"view"},{"type":"function","name":"height","inputs":[],"outputs":[{"name":"","type":"uint256","internalType":"uint256"}],"stateMutability":"view"},{"type":"function","name":"mapbuffer","inputs":[{"name":"_value","type":"uint256","internalType":"uint256"}],"outputs":[{"name":"x","type":"uint256","internalType":"uint256"},{"name":"y","type":"uint256","internalType":"uint256"}],"stateMutability":"view"},{"type":"function","name":"paintTiles","inputs":[{"name":"_tiles","type":"uint256[]","internalType":"uint256[]"},{"name":"_r","type":"uint8","internalType":"uint8"},{"name":"_g","type":"uint8","internalType":"uint8"},{"name":"_b","type":"uint8","internalType":"uint8"}],"outputs":[],"stateMutability":"nonpayable"},{"type":"function","name":"rBuffer","inputs":[{"name":"","type":"uint256","internalType":"uint256"}],"outputs":[{"name":"","type":"uint8","internalType":"uint8"}],"stateMutability":"view"},{"type":"function","name":"setTile","inputs":[{"name":"_x","type":"uint256","internalType":"uint256"},{"name":"_y","type":"uint256","internalType":"uint256"},{"name":"_r","type":"uint8","internalType":"uint8"},{"name":"_g","type":"uint8","internalType":"uint8"},{"name":"_b","type":"uint8","internalType":"uint8"}],"outputs":[],"stateMutability":"nonpayable"},{"type":"function","name":"size","inputs":[],"outputs":[{"name":"","type":"uint256","internalType":"uint256"}],"stateMutability":"view"},{"type":"function","name":"width","inputs":[],"outputs":[{"name":"","type":"uint256","internalType":"uint256"}],"stateMutability":"view"},{"type":"event","name":"tilePainted","inputs":[{"name":"x","type":"uint256","indexed":false,"internalType":"uint256"},{"name":"y","type":"uint256","indexed":false,"internalType":"uint256"},{"name":"r","type":"uint8","indexed":false,"internalType":"uint8"},{"name":"g","type":"uint8","indexed":false,"internalType":"uint8"},{"name":"b","type":"uint8","indexed":false,"internalType":"uint8"}],"anonymous":false},{"type":"event","name":"tilesPainted","inputs":[{"name":"indices","type":"uint256[]","indexed":false,"internalType":"uint256[]"},{"name":"r","type":"uint8","indexed":false,"internalType":"uint8"},{"name":"g","type":"uint8","indexed":false,"internalType":"uint8"},{"name":"b","type":"uint8","indexed":false,"internalType":"uint8"}],"anonymous":false},{"type":"error","name":"OutOfBoundsX","inputs":[]},{"type":"error","name":"OutOfBoundsY","inputs":[]},{"type":"error","name":"TileIndexOutOfBounds","inputs":[]},{"type":"error","name":"ValueOutOfBounds","inputs":[]}]
+[
+  {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "_width",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "_height",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "WIPE_COOLDOWN",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "bBuffer",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "gBuffer",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getNextWipeTime",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getTile",
+    "inputs": [
+      {
+        "name": "_x",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "_y",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getTiles",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8[]",
+        "internalType": "uint8[]"
+      },
+      {
+        "name": "",
+        "type": "uint8[]",
+        "internalType": "uint8[]"
+      },
+      {
+        "name": "",
+        "type": "uint8[]",
+        "internalType": "uint8[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "height",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "lastWipeTimestamp",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "mapbuffer",
+    "inputs": [
+      {
+        "name": "_value",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "x",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "y",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "paintTiles",
+    "inputs": [
+      {
+        "name": "_tiles",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
+      },
+      {
+        "name": "_r",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "_g",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "_b",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "rBuffer",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "setTile",
+    "inputs": [
+      {
+        "name": "_x",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "_y",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "_r",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "_g",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "_b",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "size",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "width",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "wipeCanvas",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "writeSection",
+    "inputs": [
+      {
+        "name": "_cursorX",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "_cursorY",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "_colors",
+        "type": "uint24[]",
+        "internalType": "uint24[]"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "canvasWiped",
+    "inputs": [
+      {
+        "name": "wiper",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "timestamp",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "sectionWritten",
+    "inputs": [
+      {
+        "name": "cursorX",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "cursorY",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "numPixels",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "tilePainted",
+    "inputs": [
+      {
+        "name": "x",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "y",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "r",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
+      },
+      {
+        "name": "g",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
+      },
+      {
+        "name": "b",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "tilesPainted",
+    "inputs": [
+      {
+        "name": "indices",
+        "type": "uint256[]",
+        "indexed": false,
+        "internalType": "uint256[]"
+      },
+      {
+        "name": "r",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
+      },
+      {
+        "name": "g",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
+      },
+      {
+        "name": "b",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "OutOfBoundsX",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OutOfBoundsY",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "TileIndexOutOfBounds",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ValueOutOfBounds",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "WipeOnCooldown",
+    "inputs": []
+  }
+]
