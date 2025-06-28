@@ -72,7 +72,7 @@ export function useWallet() {
         chain,
         transport: shredsWebSocket(wss), // Replace with your Shreds WebSocket endpoint
       }),
-    []
+    [chain, wss]
   );
 
   const syncClient = useMemo(
@@ -82,7 +82,7 @@ export function useWallet() {
         // @ts-expect-error Shreds SDK type incompatibility with standard transport
         transport: http(_http),
       }),
-    []
+    [chain, _http]
   );
 
   const publicClient = useMemo(
@@ -91,7 +91,7 @@ export function useWallet() {
         chain,
         transport: http(_http),
       }),
-    []
+    [chain, _http]
   );
 
   // Get the account from stored wallet
