@@ -45,6 +45,28 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Scripts
+
+### Draw Image to Canvas
+
+Draw any image to the canvas using the automated script:
+
+```bash
+# Draw an image to the canvas
+npm run draw-image path/to/your/image.png
+
+# Example with test image
+npm run draw-image scripts/test.jpg
+```
+
+The script automatically:
+- Resizes images to 64x64 pixels
+- Converts them to the canvas format
+- Uploads them using efficient batch transactions
+- Handles retries and concurrent processing
+
+See `scripts/README.md` for detailed configuration options.
+
 ## Learn More
 
 To easily set this base repo, you may use the following:
