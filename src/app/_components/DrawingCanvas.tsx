@@ -10,6 +10,7 @@ import { TransactionQueue } from "@/providers/PageProvider";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { HashLoader } from "react-spinners";
 import { toast } from "sonner";
+import Image from "next/image";
 import { encodeFunctionData, parseAbiItem } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { useReadContract } from "wagmi";
@@ -22,6 +23,7 @@ type PixelWithTimestamp = TransactionQueue & {
 };
 
 const USER_PIXEL_FADE_DURATION = 3000; // 3 seconds
+
 
 export function DrawingCanvas() {
   // Canvas refs for double buffering
@@ -768,6 +770,31 @@ export function DrawingCanvas() {
         loading={userPixels.length > 0 || currentBatchRef.current.length > 0}
         style={{ position: "absolute", bottom: 32, right: 32 }}
       />
+      
+      {/* Loading overlay with theme-aware risu-dance.gif */}
+      {!tilesData && (
+        <div className="absolute aspect-square w-full max-w-[820px] max-h-[820px] flex items-center justify-center bg-foreground rounded-sm border shadow-lg border-border-primary">
+          <div className="flex flex-col items-center gap-4">
+            <Image
+              src="/risu-dance-light.gif"
+              alt="Loading canvas..."
+              width={128}
+              height={128}
+              className="object-contain rounded-lg dark:hidden"
+              unoptimized={true}
+            />
+            <Image
+              src="/risu-dance-dark.gif"
+              alt="Loading canvas..."
+              width={128}
+              height={128}
+              className="object-contain rounded-lg hidden dark:block"
+              unoptimized={true}
+            />
+          </div>
+        </div>
+      )}
+      
       <canvas
         ref={canvasRef}
         onMouseDown={startDrawing}
