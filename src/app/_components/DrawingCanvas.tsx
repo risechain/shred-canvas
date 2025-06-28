@@ -77,16 +77,17 @@ export function DrawingCanvas() {
     // Silent status tracking for nonce manager
   }, [wallet.account?.address, nonceInitialized, publicClient]);
 
-  const tiles = useReadContract({
+  const { data: tilesData, refetch: refetchTiles } = useReadContract({
     abi: canvasAbi,
     address: contract,
     functionName: "getTiles",
     chainId: chain.id,
   });
 
-  // Set up blockchain event listener once
+  // Set up blockchain event listeners
   useEffect(() => {
-    const unwatch = shredClient.watchShredEvent({
+    // Listen for tiles painted events
+    const unwatchPainted = shredClient.watchShredEvent({
       event: parseAbiItem(
         "event tilesPainted(uint256[] indices, uint8 r, uint8 g, uint8 b)"
       ),
@@ -95,10 +96,25 @@ export function DrawingCanvas() {
       },
     });
 
+    // Listen for canvas wiped events
+    const unwatchWiped = shredClient.watchShredEvent({
+      event: parseAbiItem(
+        "event canvasWiped(address indexed wiper, uint256 timestamp)"
+      ),
+      onLogs: () => {
+        // When canvas is wiped, clear the blockchain pixels and refetch tiles
+        setBlockchainPixels([]);
+        refetchTiles();
+      },
+    });
+
     // Cleanup function to stop watching when component unmounts
     return () => {
-      if (typeof unwatch === "function") {
-        unwatch();
+      if (typeof unwatchPainted === "function") {
+        unwatchPainted();
+      }
+      if (typeof unwatchWiped === "function") {
+        unwatchWiped();
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -535,7 +551,7 @@ export function DrawingCanvas() {
 
   // Initialize Buffer 2 (source of truth) from blockchain data
   const initializeBuffer2 = () => {
-    if (!buffer2Ref.current || !tiles.data) return;
+    if (!buffer2Ref.current || !tilesData) return;
 
     const canvas = buffer2Ref.current;
     const context = canvas.getContext("2d");
@@ -544,9 +560,9 @@ export function DrawingCanvas() {
     const imageData = context.createImageData(canvasSize, canvasSize);
     const data = imageData.data;
 
-    const rBuffer = Object.values((tiles.data as number[])[0]);
-    const gBuffer = Object.values((tiles.data as number[])[1]);
-    const bBuffer = Object.values((tiles.data as number[])[2]);
+    const rBuffer = Object.values((tilesData as number[])[0]);
+    const gBuffer = Object.values((tilesData as number[])[1]);
+    const bBuffer = Object.values((tilesData as number[])[2]);
 
     // Map buffer values to canvas pixels
     for (let i = 0; i < canvasSize * canvasSize; i++) {
@@ -623,7 +639,7 @@ export function DrawingCanvas() {
   useEffect(() => {
     initializeBuffer2();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tiles.data, blockchainPixels]);
+  }, [tilesData, blockchainPixels]);
 
   // Update user overlay when user pixels change
   useEffect(() => {
@@ -636,7 +652,7 @@ export function DrawingCanvas() {
     renderCanvas();
     setPendingTx(userPixels.length);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userPixels, blockchainPixels, tiles.data]);
+  }, [userPixels, blockchainPixels, tilesData]);
 
   // Start fade timer for user pixels
   useEffect(() => {

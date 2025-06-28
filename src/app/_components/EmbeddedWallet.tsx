@@ -15,7 +15,7 @@ import { CopyIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { formatEther } from "viem";
-import { useBalance, useTransactionCount } from "wagmi";
+import { useBalance } from "wagmi";
 
 export function EmbeddedWalletContent() {
   const { setIsResetting, resetWalletClient, wallet, getStoredWallet } =
@@ -28,8 +28,6 @@ export function EmbeddedWalletContent() {
     batchSize,
     setBatchSize,
     setProcessingType,
-    localNonce,
-    isNonceInitialized: nonceInitialized,
   } = usePage();
 
   const { chain } = useNetworkConfig();
@@ -38,8 +36,6 @@ export function EmbeddedWalletContent() {
     address: wallet.account.address,
     chainId: chain.id,
   });
-
-  const transaction = useTransactionCount({ address: wallet.account.address });
 
   const [inputType, setInputType] = useState<"password" | "text">("password");
 
@@ -126,26 +122,6 @@ export function EmbeddedWalletContent() {
             </p>
             <p className="text-sm md:text-md">{balance.data?.symbol}</p>
           </div>
-        </div>
-
-        <Separator />
-
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm md:text-md text-text-secondary">
-            Blockchain Nonce:
-          </p>
-          <p className="text-sm md:text-md">
-            {transaction.data?.toString() ?? 0}
-          </p>
-        </div>
-
-        <Separator />
-
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm md:text-md text-text-secondary">Local Nonce:</p>
-          <p className="text-sm md:text-md">
-            {nonceInitialized ? localNonce : "Not initialized"}
-          </p>
         </div>
 
         <Separator />

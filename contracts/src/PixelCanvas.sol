@@ -26,6 +26,7 @@ contract PixelCanvas {
 
     event tilePainted(uint256 x, uint256 y, uint8 r, uint8 g, uint8 b);
     event tilesPainted(uint256[] indices, uint8 r, uint8 g, uint8 b);
+    event sectionWritten(uint256 cursorX, uint256 cursorY, uint256 numPixels);
     event canvasWiped(address indexed wiper, uint256 timestamp);
 
     /// @notice Initialize the canvas with given dimensions
@@ -99,6 +100,39 @@ contract PixelCanvas {
             bBuffer[_tiles[i]] = _b;
         }
         emit tilesPainted(_tiles, _r, _g, _b);
+    }
+
+    /// @notice Write a section of pixels starting from cursor position with different colors
+    /// @param _cursorX Starting X coordinate
+    /// @param _cursorY Starting Y coordinate
+    /// @param _colors Array of RGB values packed as uint24 (R<<16 | G<<8 | B)
+    /// @dev Writes pixels row by row from the cursor position
+    function writeSection(uint256 _cursorX, uint256 _cursorY, uint24[] memory _colors) public {
+        uint256 startIndex = _mapCoordinatesToIndex(_cursorX, _cursorY);
+        
+        for (uint256 i = 0; i < _colors.length; i++) {
+            uint256 currentIndex = startIndex + i;
+            
+            // Check if we've gone beyond the canvas bounds
+            if (currentIndex >= size) break;
+            
+            // Calculate current position to check bounds
+            uint256 currentY = currentIndex / width;
+            
+            // If we've gone beyond the canvas height, stop
+            if (currentY >= height) break;
+            
+            // Extract RGB from packed uint24
+            uint8 r = uint8((_colors[i] >> 16) & 0xFF);
+            uint8 g = uint8((_colors[i] >> 8) & 0xFF);
+            uint8 b = uint8(_colors[i] & 0xFF);
+            
+            rBuffer[currentIndex] = r;
+            gBuffer[currentIndex] = g;
+            bBuffer[currentIndex] = b;
+        }
+        
+        emit sectionWritten(_cursorX, _cursorY, _colors.length);
     }
 
     /// @notice Get all tiles' RGB values

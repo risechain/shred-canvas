@@ -7,12 +7,19 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { useModal } from "@/hooks/useModal";
 import { MoonIcon, SettingsIcon, SunIcon, WalletIcon } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 import { RiseLogo } from "./RiseLogo";
 
 export function NavigationBar() {
   const { theme, setTheme } = useTheme();
   const { showModal } = useModal();
   const isMobile = useIsMobile();
+  const [mounted, setMounted] = useState(false);
+
+  // Only run on client-side to prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <div className="flex items-center justify-center rounded-t-sm w-full pt-2 pb-2.5 px-4 bg-primary">
@@ -67,7 +74,9 @@ export function NavigationBar() {
               setTheme(theme === "light" ? "dark" : "light");
             }}
           >
-            {theme === "light" ? (
+            {!mounted ? (
+              <SunIcon className="h-4 w-3" />
+            ) : theme === "light" ? (
               <MoonIcon className="h-4 w-3" color="var(--color-invert)" />
             ) : (
               <SunIcon className="h-4 w-3" />

@@ -300,6 +300,29 @@
     "stateMutability": "nonpayable"
   },
   {
+    "type": "function",
+    "name": "writeSection",
+    "inputs": [
+      {
+        "name": "_cursorX",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "_cursorY",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "_colors",
+        "type": "uint24[]",
+        "internalType": "uint24[]"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
     "type": "event",
     "name": "canvasWiped",
     "inputs": [
@@ -311,6 +334,31 @@
       },
       {
         "name": "timestamp",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "sectionWritten",
+    "inputs": [
+      {
+        "name": "cursorX",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "cursorY",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "numPixels",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"

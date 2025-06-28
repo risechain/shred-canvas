@@ -12,7 +12,7 @@ const WALLET_STORAGE_KEY = "paint_canvas_wallet";
 
 export function useWallet() {
   const [isResetting, setIsResetting] = useState<boolean>(false);
-  const { chain, wsIndexing } = useNetworkConfig();
+  const { chain, wss, http: _http } = useNetworkConfig();
 
   function getStoredWallet() {
     if (typeof window !== "undefined") {
@@ -70,9 +70,9 @@ export function useWallet() {
     () =>
       createPublicShredClient({
         chain,
-        transport: shredsWebSocket(wsIndexing), // Replace with your Shreds WebSocket endpoint
+        transport: shredsWebSocket(wss), // Replace with your Shreds WebSocket endpoint
       }),
-    []
+    [chain, wss]
   );
 
   const syncClient = useMemo(
@@ -80,18 +80,18 @@ export function useWallet() {
       createPublicSyncClient({
         chain,
         // @ts-expect-error Shreds SDK type incompatibility with standard transport
-        transport: http(),
+        transport: http(_http),
       }),
-    []
+    [chain, _http]
   );
 
   const publicClient = useMemo(
     () =>
       createPublicClient({
         chain,
-        transport: http(),
+        transport: http(_http),
       }),
-    []
+    [chain, _http]
   );
 
   // Get the account from stored wallet

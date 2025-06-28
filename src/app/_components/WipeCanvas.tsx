@@ -2,11 +2,12 @@ import { Button, Separator } from "@/components/ui";
 import { useNetworkConfig } from "@/hooks/contract/useNetworkConfig";
 import { useWallet } from "@/hooks/contract/useWallet";
 import { useNonceManager } from "@/hooks/useNonceManager";
-import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Loader2, Bell, BellOff } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 import { encodeFunctionData, parseAbiItem } from "viem";
 import { useReadContract } from "wagmi";
+import { Switch } from "@mui/material";
 import canvasAbi from "../../../abi/canvasAbi.json";
 
 export function WipeCanvas() {
@@ -14,6 +15,7 @@ export function WipeCanvas() {
   const { shredClient, syncClient, account, wallet, publicClient } = useWallet();
   const [isWiping, setIsWiping] = useState(false);
   const [timeUntilNextWipe, setTimeUntilNextWipe] = useState<number>(0);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   // Initialize nonce manager
   const {
@@ -21,6 +23,33 @@ export function WipeCanvas() {
     resetNonce,
     isNonceInitialized: nonceInitialized,
   } = useNonceManager(wallet.account?.address, publicClient);
+
+  // Load notification preference from localStorage
+  useEffect(() => {
+    const savedPreference = localStorage.getItem("wipeCanvasNotifications");
+    if (savedPreference !== null) {
+      setNotificationsEnabled(savedPreference === "true");
+    }
+  }, []);
+
+  // Handle notification toggle
+  const handleNotificationToggle = (enabled: boolean) => {
+    setNotificationsEnabled(enabled);
+    localStorage.setItem("wipeCanvasNotifications", enabled.toString());
+  };
+
+  // Helper function to show toast only if notifications are enabled
+  const showToastSuccess = useCallback((message: string, options?: { duration?: number }) => {
+    if (notificationsEnabled) {
+      toast.success(message, options);
+    }
+  }, [notificationsEnabled]);
+
+  const showToastError = useCallback((message: string, options?: { duration?: number }) => {
+    if (notificationsEnabled) {
+      toast.error(message, options);
+    }
+  }, [notificationsEnabled]);
 
   // Read the next wipe time from the contract
   const { data: nextWipeTime, refetch: refetchNextWipeTime } = useReadContract({
@@ -56,7 +85,7 @@ export function WipeCanvas() {
       ),
       onLogs: () => {
         refetchNextWipeTime();
-        toast.success("Canvas has been wiped clean!", {
+        showToastSuccess("Canvas has been wiped clean!", {
           duration: 5000,
         });
       },
@@ -67,11 +96,11 @@ export function WipeCanvas() {
         unwatch();
       }
     };
-  }, [shredClient, refetchNextWipeTime]);
+  }, [shredClient, refetchNextWipeTime, showToastSuccess]);
 
   const handleWipeCanvas = async () => {
     if (!account || !nonceInitialized) {
-      toast.error("Please connect your wallet first");
+      showToastError("Please connect your wallet first");
       return;
     }
 
@@ -102,7 +131,7 @@ export function WipeCanvas() {
           serializedTransaction,
         })
         .then(() => {
-          toast.success("Canvas wiped successfully!", {
+          showToastSuccess("Canvas wiped successfully!", {
             duration: 5000,
           });
         })
@@ -110,30 +139,30 @@ export function WipeCanvas() {
           const errorMessage = txError instanceof Error ? txError.message.toLowerCase() : String(txError).toLowerCase();
           
           if (errorMessage.includes("wipeonCooldown") || errorMessage.includes("cooldown")) {
-            toast.error("Canvas is on cooldown. Please wait for the timer.");
+            showToastError("Canvas is on cooldown. Please wait for the timer.");
           } else if (errorMessage.includes("insufficient")) {
-            toast.error("Insufficient funds. Please fund your wallet.");
+            showToastError("Insufficient funds. Please fund your wallet.");
           } else {
-            toast.error("Transaction failed. Please try again.");
+            showToastError("Transaction failed. Please try again.");
           }
         });
 
       // Show immediate feedback
-      toast.success("Wiping canvas... This may take a moment.", {
+      showToastSuccess("Wiping canvas... This may take a moment.", {
         duration: 3000,
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
       
       if (errorMessage.includes("wipeonCooldown") || errorMessage.includes("cooldown")) {
-        toast.error("Canvas is on cooldown. Please wait for the timer.");
+        showToastError("Canvas is on cooldown. Please wait for the timer.");
       } else if (errorMessage.includes("insufficient")) {
-        toast.error("Insufficient funds. Please fund your wallet.");
+        showToastError("Insufficient funds. Please fund your wallet.");
       } else if (errorMessage.includes("nonce") || errorMessage.includes("replacement")) {
         resetNonce().catch(() => {});
-        toast.error("Transaction failed due to nonce conflict. Please try again.");
+        showToastError("Transaction failed due to nonce conflict. Please try again.");
       } else {
-        toast.error("Failed to wipe canvas. Please try again.");
+        showToastError("Failed to wipe canvas. Please try again.");
       }
     } finally {
       setIsWiping(false);
@@ -171,13 +200,46 @@ export function WipeCanvas() {
             Wiping Canvas...
           </>
         ) : canWipe ? (
-          "Wipe Canvas Clean"
+          "Clear Canvas (Once per hour)"
         ) : (
-          `Wipe Cooldown: ${formatTime(timeUntilNextWipe)}`
+          `Clear Canvas Cooldown ${formatTime(timeUntilNextWipe)}`
         )}
       </Button>
 
       <Separator />
+
+      {/* Notification Toggle */}
+      <div className="flex items-center justify-between bg-accent/30 rounded-md px-3 py-2">
+        <div className="flex items-center gap-2">
+          {notificationsEnabled ? (
+            <Bell className="w-4 h-4 text-text-accent" />
+          ) : (
+            <BellOff className="w-4 h-4 text-text-accent" />
+          )}
+          <span className="text-sm text-text-accent">Notifications</span>
+        </div>
+        <Switch
+          checked={notificationsEnabled}
+          onChange={(event) => handleNotificationToggle(event.target.checked)}
+          size="small"
+          aria-label="Toggle notifications"
+          sx={{
+            '& .MuiSwitch-switchBase': {
+              color: 'var(--text-accent)',
+              '&.Mui-checked': {
+                color: 'var(--purple-10)',
+              },
+              '&.Mui-checked + .MuiSwitch-track': {
+                backgroundColor: 'var(--purple-10)',
+              },
+            },
+            '& .MuiSwitch-track': {
+              backgroundColor: 'var(--accent)',
+              opacity: 0.5,
+            },
+          }}
+        />
+      </div>
     </div>
   );
 }
