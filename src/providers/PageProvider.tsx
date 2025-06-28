@@ -8,6 +8,7 @@ import {
 } from "react";
 
 export type View = "grid" | "carousel";
+export type Tool = "brush" | "eyedropper";
 
 type RgbValues = {
   r: number;
@@ -42,6 +43,9 @@ export type PageContextType = {
 
   brushSize: number;
   setBrushSize: (props: number) => void;
+
+  currentTool: Tool;
+  setCurrentTool: (tool: Tool) => void;
 
   pendingTx: number;
   setPendingTx: Dispatch<SetStateAction<number>>;
@@ -81,6 +85,9 @@ const initialState: PageContextType = {
   brushSize: 5,
   setBrushSize: () => {},
 
+  currentTool: "brush",
+  setCurrentTool: () => {},
+
   pendingTx: 0,
   setPendingTx: () => {},
 
@@ -117,6 +124,7 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const [brushColor, setBrushColor] = useState("");
   const [brushSize, setBrushSize] = useState(5);
+  const [currentTool, setCurrentTool] = useState<Tool>("brush");
   const [rgbValues, setRgbValues] = useState<RgbValues>({
     r: 24,
     g: 86,
@@ -150,6 +158,9 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
       brushSize,
       setBrushSize,
 
+      currentTool,
+      setCurrentTool,
+
       processingType,
       setProcessingType,
 
@@ -177,6 +188,7 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
     brushColor,
     rgbValues,
     brushSize,
+    currentTool,
     processingType,
     pendingTx,
     completedTx,

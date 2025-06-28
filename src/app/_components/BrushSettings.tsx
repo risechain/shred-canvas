@@ -10,14 +10,14 @@ import {
 import { usePage } from "@/hooks/usePage";
 import { PRESET_COLORS } from "@/lib/constants";
 import { handleCopy } from "@/lib/utils";
-import { CopyIcon, MinusIcon, PlusIcon } from "lucide-react";
+import { CopyIcon, MinusIcon, PlusIcon, PaintbrushIcon, DropletIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { HexColorInput, HexColorPicker } from "react-colorful";
 
 type ColorCode = "HEX" | "RGB";
 
 export function BrushSettings() {
-  const { brushColor, setBrushColor, rgbValues, setRgbValues, brushSize } =
+  const { brushColor, setBrushColor, rgbValues, setRgbValues, brushSize, currentTool, setCurrentTool } =
     usePage();
 
   const [brushColors, setBrushColors] = useState<string[]>([]);
@@ -117,7 +117,29 @@ export function BrushSettings() {
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-md md:text-lg text-text-accent">Brush Settings</p>
+      <p className="text-md md:text-lg text-text-accent">Canvas Tools</p>
+      
+      {/* Tool Selection */}
+      <div className="flex gap-2">
+        <Button
+          variant={currentTool === "brush" ? "default" : "secondary"}
+          onClick={() => setCurrentTool("brush")}
+          className="flex items-center gap-2 flex-1"
+        >
+          <PaintbrushIcon size={16} />
+          Brush
+        </Button>
+        <Button
+          variant={currentTool === "eyedropper" ? "default" : "secondary"}
+          onClick={() => setCurrentTool("eyedropper")}
+          className="flex items-center gap-2 flex-1"
+        >
+          <DropletIcon size={16} />
+          Eyedropper
+        </Button>
+      </div>
+
+      <Separator />
       <div className="flex flex-wrap gap-3 items-center">
         <div
           className="w-16 h-16 rounded-sm"
@@ -126,7 +148,7 @@ export function BrushSettings() {
         <div className="">
           <div className="flex gap-2">
             <p className="text-sm md:text-md text-text-accent">Size:</p>
-            <p className="text-sm md:text-md">{brushSize}px</p>
+            <p className="text-sm md:text-md">{brushSize/5}px</p>
           </div>
           <div className="flex gap-2">
             <p className="text-sm md:text-md text-text-accent">HEX:</p>

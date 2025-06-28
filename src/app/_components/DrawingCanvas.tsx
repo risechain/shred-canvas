@@ -48,7 +48,7 @@ export function DrawingCanvas() {
 
   const { contract, chain, canvasSize } = useNetworkConfig();
 
-  const { brushColor, brushSize, rgbValues, setPendingTx, setCompletedTx } =
+  const { brushColor, brushSize, rgbValues, setPendingTx, setCompletedTx, currentTool, setCurrentTool, setRgbValues, setBrushColor } =
     usePage();
 
   const { showModal } = useModal();
@@ -396,12 +396,57 @@ export function DrawingCanvas() {
     return { x, y };
   }
 
+  function pickColor(x: number, y: number) {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const context = canvas.getContext('2d');
+    if (!context) return;
+
+    // Get pixel data at clicked position
+    const imageData = context.getImageData(x, y, 1, 1);
+    const pixel = imageData.data;
+
+    // Extract RGB values
+    const pickedColor = {
+      r: pixel[0],
+      g: pixel[1],
+      b: pixel[2]
+    };
+
+    // Update brush color with picked color
+    setRgbValues(pickedColor);
+    
+    // Convert RGB to hex
+    const rgbToHex = (r: number, g: number, b: number) => {
+      return "#" + [r, g, b].map(x => {
+        const hex = Math.max(0, Math.min(255, x)).toString(16);
+        return hex.length === 1 ? "0" + hex : hex;
+      }).join("");
+    };
+
+    const hexColor = rgbToHex(pickedColor.r, pickedColor.g, pickedColor.b);
+    setBrushColor(hexColor);
+    localStorage.setItem("brush-hex", hexColor);
+    localStorage.setItem("brush-rgb", JSON.stringify(pickedColor));
+
+    // Automatically switch back to brush tool after picking color
+    setCurrentTool("brush");
+  }
+
   function startDrawing({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current;
 
     if (!canvas) return;
     const { x, y } = getCoordinates(canvas, nativeEvent);
 
+    // Check current tool mode
+    if (currentTool === "eyedropper") {
+      pickColor(x, y);
+      return;
+    }
+
+    // Brush tool behavior
     if (!contextRef.current) return;
     contextRef.current.beginPath();
     contextRef.current.moveTo(x, y);
@@ -439,7 +484,7 @@ export function DrawingCanvas() {
   }
 
   function draw({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) {
-    if (!isDrawing) return;
+    if (!isDrawing || currentTool !== "brush") return;
 
     const canvas = canvasRef.current;
 
@@ -480,6 +525,13 @@ export function DrawingCanvas() {
     const x = Math.floor((touch.clientX - rect.left) * scaleX);
     const y = Math.floor((touch.clientY - rect.top) * scaleY);
 
+    // Check current tool mode
+    if (currentTool === "eyedropper") {
+      pickColor(x, y);
+      return;
+    }
+
+    // Brush tool behavior
     if (!contextRef.current) return;
     contextRef.current.beginPath();
     contextRef.current.moveTo(x, y);
@@ -502,7 +554,7 @@ export function DrawingCanvas() {
   }
 
   function touchMove(e: React.TouchEvent<HTMLCanvasElement>) {
-    if (!isDrawing) return;
+    if (!isDrawing || currentTool !== "brush") return;
     e.preventDefault();
     const touch = e.touches[0];
     const canvas = canvasRef.current;
@@ -725,7 +777,9 @@ export function DrawingCanvas() {
         onTouchStart={touchStart}
         onTouchMove={touchMove}
         onTouchEnd={stopDrawing}
-        className="cursor-crosshair touch-none aspect-square w-full max-w-[820px] max-h-[820px] rounded-sm border shadow-lg border-border-primary bg-foreground"
+        className={`touch-none aspect-square w-full max-w-[820px] max-h-[820px] rounded-sm border shadow-lg border-border-primary bg-foreground ${
+          currentTool === "eyedropper" ? "cursor-eyedropper" : "cursor-crosshair"
+        }`}
         style={{
           imageRendering: "pixelated",
         }}
