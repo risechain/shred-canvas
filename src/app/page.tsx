@@ -47,11 +47,17 @@ export default function Home() {
       className="flex h-full max-h-[calc(100%_-_55px)] overflow-auto rounded-b-md"
     >
       <EmbeddedWallet />
-      <ResizableHandle withHandle className="bg-accent max-xl:hidden" />
+      <ResizableHandle
+        withHandle
+        className="bg-accent max-xl:hidden border border-accent-foreground dark:border-border-primary"
+      />
       <ResizablePanel defaultSize={60}>
         <DrawingCanvas />
       </ResizablePanel>
-      <ResizableHandle withHandle className="bg-accent max-lg:hidden" />
+      <ResizableHandle
+        withHandle
+        className="bg-accent max-lg:hidden border border-accent-foreground dark:border-border-primary"
+      />
       <Settings />
     </ResizablePanelGroup>
   );

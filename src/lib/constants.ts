@@ -10,3 +10,5 @@ export const PRESET_COLORS = [
   "#7967e5",
   "#c02fb4",
 ];
+
+export const PRESET_BACKGROUNDS = ["#000000", "#a2a2a2", "#ffffff"];

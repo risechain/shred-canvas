@@ -63,6 +63,7 @@ export function DrawingCanvas() {
     setCurrentTool,
     setRgbValues,
     setBrushColor,
+    bgCanvas,
     notificationsEnabled,
   } = usePage();
 
@@ -760,8 +761,13 @@ export function DrawingCanvas() {
   return (
     <div
       className={cn(
-        "relative flex-1 flex flex-col gap-2 py-3 items-center justify-center h-full w-full bg-accent dark:bg-accent/35"
+        "relative flex-1 flex flex-col gap-2 py-3 items-center justify-center",
+        "h-full w-full",
+        "bg-accent dark:bg-accent/35"
       )}
+      style={{
+        background: bgCanvas,
+      }}
     >
       <HashLoader
         color="white"
