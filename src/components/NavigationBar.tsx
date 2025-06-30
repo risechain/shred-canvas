@@ -77,7 +77,7 @@ export function NavigationBar() {
             {!mounted ? (
               <SunIcon className="h-4 w-3" />
             ) : theme === "light" ? (
-              <MoonIcon className="h-4 w-3" color="var(--color-invert)" />
+              <MoonIcon className="h-4 w-3 stroke-white" />
             ) : (
               <SunIcon className="h-4 w-3" />
             )}

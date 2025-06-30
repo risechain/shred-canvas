@@ -7,6 +7,7 @@ import { useNonceManager } from "@/hooks/useNonceManager";
 import { usePage } from "@/hooks/usePage";
 import { cn } from "@/lib/utils";
 import { TransactionQueue } from "@/providers/PageProvider";
+import { Tooltip } from "@mui/material";
 import Image from "next/image";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { HashLoader } from "react-spinners";
@@ -40,6 +41,9 @@ export function DrawingCanvas() {
     x: 0,
     y: 0,
   });
+
+  const [toolTip, setToolTip] =
+    useState<Partial<TransactionQueue | null>>(null);
 
   // Concurrent transaction system
   const batchIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -463,12 +467,30 @@ export function DrawingCanvas() {
   }
 
   function draw({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) {
-    if (!isDrawing || currentTool !== "brush") return;
-
     const canvas = canvasRef.current;
-
     if (!canvas) return;
     const { x, y } = getCoordinates(canvas, nativeEvent);
+
+    if (currentTool === "eyedropper") {
+      const context = canvas.getContext("2d");
+      if (!context) return;
+      // Get pixel data at clicked position
+      const imageData = context.getImageData(x, y, 1, 1);
+      const data = imageData.data;
+
+      // Extract RGB values
+      const pickedColor = {
+        r: data[0],
+        g: data[1],
+        b: data[2],
+      };
+
+      setToolTip({
+        ...pickedColor,
+      });
+    }
+
+    if (!isDrawing || currentTool !== "brush") return;
 
     // Do not remove this -- this will prevent from adding duplicating coordinates in txQueue
     if (lastTx.x === x && lastTx.y === y) return;
@@ -771,25 +793,47 @@ export function DrawingCanvas() {
           </div>
         </div>
       )}
-
-      <canvas
-        ref={canvasRef}
-        onMouseDown={startDrawing}
-        onMouseMove={draw}
-        onMouseUp={stopDrawing}
-        onMouseLeave={stopDrawing}
-        onTouchStart={touchStart}
-        onTouchMove={touchMove}
-        onTouchEnd={stopDrawing}
-        className={`touch-none aspect-square w-full max-w-[820px] max-h-[820px] rounded-sm border shadow-lg border-border-primary bg-foreground ${
-          currentTool === "eyedropper"
-            ? "cursor-eyedropper"
-            : "cursor-crosshair"
-        }`}
-        style={{
-          imageRendering: "pixelated",
-        }}
-      />
+      <Tooltip
+        placement="right-end"
+        title={
+          currentTool === "eyedropper" ? (
+            <div className="flex gap-2 items-center">
+              <div
+                className="w-8 h-8 border border-border-primary rounded"
+                style={{
+                  backgroundColor: `rgb(${toolTip?.r},${toolTip?.g},${toolTip?.b})`,
+                }}
+              />
+              <p className="text-white text-sm pl-1 pr-2">
+                <span className="font-bold text-white">RGB:</span> {toolTip?.r},{" "}
+                {toolTip?.g}, {toolTip?.b}
+              </p>
+            </div>
+          ) : (
+            ""
+          )
+        }
+        followCursor
+      >
+        <canvas
+          ref={canvasRef}
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
+          onTouchStart={touchStart}
+          onTouchMove={touchMove}
+          onTouchEnd={stopDrawing}
+          className={`touch-none aspect-square w-full max-w-[820px] max-h-[820px] rounded-sm border shadow-lg border-border-primary bg-foreground ${
+            currentTool === "eyedropper"
+              ? "cursor-eyedropper"
+              : "cursor-crosshair"
+          }`}
+          style={{
+            imageRendering: "pixelated",
+          }}
+        />
+      </Tooltip>
     </div>
   );
 }

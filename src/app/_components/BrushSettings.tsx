@@ -6,19 +6,28 @@ import {
   DropdownMenuTrigger,
   Input,
   Separator,
+  ToggleGroup,
+  ToggleGroupItem,
 } from "@/components/ui";
 import { usePage } from "@/hooks/usePage";
 import { PRESET_COLORS } from "@/lib/constants";
 import { handleCopy } from "@/lib/utils";
-import { CopyIcon, MinusIcon, PlusIcon, PaintbrushIcon, DropletIcon } from "lucide-react";
+import { CopyIcon, MinusIcon, Pipette, PlusIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { HexColorInput, HexColorPicker } from "react-colorful";
 
 type ColorCode = "HEX" | "RGB";
 
 export function BrushSettings() {
-  const { brushColor, setBrushColor, rgbValues, setRgbValues, brushSize, currentTool, setCurrentTool } =
-    usePage();
+  const {
+    brushColor,
+    setBrushColor,
+    rgbValues,
+    setRgbValues,
+    brushSize,
+    currentTool,
+    setCurrentTool,
+  } = usePage();
 
   const [brushColors, setBrushColors] = useState<string[]>([]);
   const [colorCode, setColorCode] = useState<ColorCode>("HEX");
@@ -118,28 +127,7 @@ export function BrushSettings() {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-md md:text-lg text-text-accent">Canvas Tools</p>
-      
-      {/* Tool Selection */}
-      <div className="flex gap-2">
-        <Button
-          variant={currentTool === "brush" ? "default" : "secondary"}
-          onClick={() => setCurrentTool("brush")}
-          className="flex items-center gap-2 flex-1"
-        >
-          <PaintbrushIcon size={16} />
-          Brush
-        </Button>
-        <Button
-          variant={currentTool === "eyedropper" ? "default" : "secondary"}
-          onClick={() => setCurrentTool("eyedropper")}
-          className="flex items-center gap-2 flex-1"
-        >
-          <DropletIcon size={16} />
-          Eyedropper
-        </Button>
-      </div>
 
-      <Separator />
       <div className="flex flex-wrap gap-3 items-center">
         <div
           className="w-16 h-16 rounded-sm"
@@ -148,7 +136,7 @@ export function BrushSettings() {
         <div className="">
           <div className="flex gap-2">
             <p className="text-sm md:text-md text-text-accent">Size:</p>
-            <p className="text-sm md:text-md">{brushSize/5}px</p>
+            <p className="text-sm md:text-md">{brushSize / 5}px</p>
           </div>
           <div className="flex gap-2">
             <p className="text-sm md:text-md text-text-accent">HEX:</p>
@@ -171,7 +159,25 @@ export function BrushSettings() {
           onChange={handleHexChange}
           style={{ width: "100%", height: "280px" }}
         />
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1 items-center">
+          <ToggleGroup type="single" value={currentTool}>
+            <ToggleGroupItem
+              value="eyedropper"
+              data-value={currentTool}
+              className="data-[value=brush]:bg-background/50"
+              onClick={() => {
+                setCurrentTool(
+                  currentTool === "eyedropper" ? "brush" : "eyedropper"
+                );
+              }}
+            >
+              <Pipette
+                data-active={currentTool === "eyedropper"}
+                className="data-[active=true]:stroke-white"
+              />
+            </ToggleGroupItem>
+          </ToggleGroup>
+
           {PRESET_COLORS.map((presetColor) => {
             return (
               <Button
@@ -298,7 +304,7 @@ export function BrushSettings() {
             handleCopy(value);
           }}
         >
-          <CopyIcon color="white" />
+          <CopyIcon className="stroke-white" />
         </Button>
       </div>
 
