@@ -59,7 +59,7 @@ export default function Home() {
   return (
     <ResizablePanelGroup
       direction="horizontal"
-      className="flex h-full max-h-[calc(100%_-_55px)] overflow-auto rounded-b-md bg-accent dark:bg-accent/35 bg-contain"
+      className="flex h-full max-h-[calc(100%_-_55px)] overflow-auto rounded-b-md bg-accent dark:bg-accent/35 bg-cover bg-no-repeat"
       style={{
         ...getCanvasBg(),
       }}

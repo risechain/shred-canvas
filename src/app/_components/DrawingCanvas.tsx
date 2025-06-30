@@ -767,7 +767,7 @@ export function DrawingCanvas() {
     >
       <div
         data-hidden={!bgCanvas.includes("bg-")}
-        className="absolute inset-0 bg-black/75 data-[hidden=true]:hidden"
+        className="absolute inset-0 bg-black/15 data-[hidden=true]:hidden"
       />
       <HashLoader
         color="white"
@@ -830,7 +830,7 @@ export function DrawingCanvas() {
           onTouchStart={touchStart}
           onTouchMove={touchMove}
           onTouchEnd={stopDrawing}
-          className={`relative z-10 touch-none aspect-square w-full max-w-[820px] max-h-[820px] rounded-sm border shadow-xl border-background/75 dark:border-foreground/15 bg-foreground ${
+          className={`relative z-10 touch-none aspect-square w-full max-w-[820px] max-h-[820px] rounded-sm border border-border-accent/50 dark:border-border-accent/5 bg-foreground ${
             currentTool === "eyedropper"
               ? "cursor-eyedropper"
               : "cursor-crosshair"

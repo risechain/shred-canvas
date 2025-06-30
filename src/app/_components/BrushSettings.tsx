@@ -331,7 +331,7 @@ export function BrushSettings() {
                   data-selected={bg === bgCanvas}
                   variant="ghost"
                   key={bg}
-                  className="bg-contain rounded border border-foreground/75 w-6 h-6 p-0 hover:scale-175 transition-all data-[selected=true]:border-foreground/50 data-[selected=true]:mx-1 data-[selected=true]:scale-125"
+                  className="bg-cover bg-no-repeat rounded border border-foreground/75 w-6 h-6 p-0 hover:scale-175 transition-all data-[selected=true]:border-foreground/50 data-[selected=true]:mx-1 data-[selected=true]:scale-125"
                   style={{
                     ...getCanvasBg(bg),
                   }}
