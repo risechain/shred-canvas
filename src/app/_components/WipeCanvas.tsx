@@ -1,4 +1,4 @@
-import { Button, Separator } from "@/components/ui";
+import { Button, Separator, Switch } from "@/components/ui";
 import { useNetworkConfig } from "@/hooks/contract/useNetworkConfig";
 import { useWallet } from "@/hooks/contract/useWallet";
 import { useNonceManager } from "@/hooks/useNonceManager";
@@ -7,7 +7,6 @@ import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 import { encodeFunctionData, parseAbiItem } from "viem";
 import { useReadContract } from "wagmi";
-import { Switch } from "@mui/material";
 import canvasAbi from "../../../abi/canvasAbi.json";
 import { usePage } from "@/hooks/usePage";
 
@@ -248,24 +247,7 @@ export function WipeCanvas() {
         </div>
         <Switch
           checked={notificationsEnabled}
-          onChange={(event) => handleNotificationToggle(event.target.checked)}
-          size="small"
-          aria-label="Toggle notifications"
-          sx={{
-            "& .MuiSwitch-switchBase": {
-              color: "var(--text-accent)",
-              "&.Mui-checked": {
-                color: "var(--purple-10)",
-              },
-              "&.Mui-checked + .MuiSwitch-track": {
-                backgroundColor: "var(--purple-10)",
-              },
-            },
-            "& .MuiSwitch-track": {
-              backgroundColor: "var(--accent)",
-              opacity: 0.5,
-            },
-          }}
+          onCheckedChange={handleNotificationToggle}
         />
       </div>
     </div>
