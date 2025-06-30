@@ -202,14 +202,13 @@ export function DrawingCanvas() {
           removeUserPixels(pixels);
 
           // Show transaction complete toast (only on desktop and if notifications enabled)
+          const pixelCount = tileIndices.length;
           if (!isMobile && notificationsEnabled) {
-            const pixelCount = tileIndices.length;
-            setCompletedTx((prev: number) => {
-              return prev + pixelCount;
-            });
-
             showTransactionToast(pixelCount);
           }
+          setCompletedTx((prev: number) => {
+            return prev + pixelCount;
+          });
         })
         .catch((error) => {
           // Check if it's a nonce-related error
@@ -751,6 +750,7 @@ export function DrawingCanvas() {
 
   // Cleanup batch timer on unmount
   useEffect(() => {
+    console.log("bg:: ", bgCanvas.includes("bg-"));
     return () => {
       if (batchIntervalRef.current) {
         clearTimeout(batchIntervalRef.current);
@@ -762,13 +762,13 @@ export function DrawingCanvas() {
     <div
       className={cn(
         "relative flex-1 flex flex-col gap-2 py-3 items-center justify-center",
-        "h-full w-full",
-        "bg-accent dark:bg-accent/35"
+        "h-full w-full"
       )}
-      style={{
-        background: bgCanvas,
-      }}
     >
+      <div
+        data-hidden={!bgCanvas.includes("bg-")}
+        className="absolute inset-0 bg-black/75 data-[hidden=true]:hidden"
+      />
       <HashLoader
         color="white"
         size={36}
@@ -778,7 +778,7 @@ export function DrawingCanvas() {
 
       {/* Loading overlay with theme-aware risu-dance.gif */}
       {!tilesData && (
-        <div className="absolute aspect-square w-full max-w-[820px] max-h-[820px] flex items-center justify-center bg-foreground rounded-sm border shadow-lg border-border-primary">
+        <div className="absolute z-20 aspect-square w-full max-w-[820px] max-h-[820px] flex items-center justify-center bg-foreground rounded-sm border shadow-lg border-border-primary">
           <div className="flex flex-col items-center gap-4">
             <Image
               src="/risu-dance-light.gif"
@@ -830,7 +830,7 @@ export function DrawingCanvas() {
           onTouchStart={touchStart}
           onTouchMove={touchMove}
           onTouchEnd={stopDrawing}
-          className={`touch-none aspect-square w-full max-w-[820px] max-h-[820px] rounded-sm border shadow-lg border-border-primary bg-foreground ${
+          className={`relative z-10 touch-none aspect-square w-full max-w-[820px] max-h-[820px] rounded-sm border shadow-xl border-background/75 dark:border-foreground/15 bg-foreground ${
             currentTool === "eyedropper"
               ? "cursor-eyedropper"
               : "cursor-crosshair"

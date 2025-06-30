@@ -123,7 +123,7 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
     "batch"
   );
 
-  const [bgCanvas, setBgCanvas] = useState("");
+  const [bgCanvas, setBgCanvas] = useState<string>("");
   const [brushColor, setBrushColor] = useState("");
   const [brushSize, setBrushSize] = useState(5);
   const [currentTool, setCurrentTool] = useState<Tool>("brush");
@@ -213,7 +213,7 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
     const initialNotification =
       localStorage.getItem("wipeCanvasNotifications") === "true";
 
-    const initialBgCanvas = localStorage.getItem("bg-canvas") ?? "";
+    const initialBgCanvas = localStorage.getItem("bg-canvas") ?? "default";
 
     setBrushColor(initialBrushHex);
     setRgbValues(initialBrushRgb ? JSON.parse(initialBrushRgb) : rgbValues);

@@ -113,9 +113,17 @@ export function BrushSettings() {
     localStorage.setItem("brush-hex", newBrushColor);
   }
 
-  function handleSetBgCanvas(bg: string) {
-    setBgCanvas(bg);
-    localStorage.setItem("bg-canvas", bg);
+  function handleSetBgCanvas(name: string) {
+    setBgCanvas(name);
+    localStorage.setItem("bg-canvas", name);
+  }
+
+  function getCanvasBg(bg: string) {
+    if (bg.includes("bg-")) {
+      return { backgroundImage: `url(/images/${bg})` };
+    } else {
+      return { background: bg };
+    }
   }
 
   useEffect(() => {
@@ -315,22 +323,28 @@ export function BrushSettings() {
       <Separator />
       <div className="space-y-2">
         <p className="text-md lg:text-lg text-text-accent">Backgrounds</p>
-        <div className="flex gap-2 items-center justify-between">
-          <div className="flex gap-2 items-center">
-            {PRESET_BACKGROUNDS.map((bgColor) => {
+        <div className="flex flex-wrap gap-2 items-center justify-between">
+          <div className="flex flex-wrap gap-2 items-center">
+            {PRESET_BACKGROUNDS.map((bg) => {
               return (
                 <Button
-                  data-selected={bgColor === bgCanvas}
+                  data-selected={bg === bgCanvas}
                   variant="ghost"
-                  key={bgColor}
-                  className="rounded border border-foreground/75 w-6 h-6 p-0 hover:scale-125 transition-all data-[selected=true]:border-foreground/50 data-[selected=true]:mx-1 data-[selected=true]:scale-125"
-                  style={{ backgroundColor: bgColor }}
-                  onClick={() => handleSetBgCanvas(bgColor)}
+                  key={bg}
+                  className="bg-contain rounded border border-foreground/75 w-6 h-6 p-0 hover:scale-175 transition-all data-[selected=true]:border-foreground/50 data-[selected=true]:mx-1 data-[selected=true]:scale-125"
+                  style={{
+                    ...getCanvasBg(bg),
+                  }}
+                  onClick={() => handleSetBgCanvas(bg)}
                 />
               );
             })}
           </div>
-          <Button variant="ghost" onClick={() => handleSetBgCanvas("")}>
+          <Button
+            variant="ghost"
+            className="p-1"
+            onClick={() => handleSetBgCanvas("")}
+          >
             Reset
           </Button>
         </div>
