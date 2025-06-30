@@ -5,16 +5,31 @@ import { EmbeddedWalletContent } from "@/app/_components/EmbeddedWallet";
 import { Button, Separator } from "@/components/ui";
 import { useIsMobile } from "@/hooks/useMobile";
 import { useModal } from "@/hooks/useModal";
-import { MoonIcon, SettingsIcon, SunIcon, WalletIcon } from "lucide-react";
+import {
+  Bell,
+  BellOff,
+  MoonIcon,
+  SettingsIcon,
+  SunIcon,
+  WalletIcon,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { RiseLogo } from "./RiseLogo";
+import { usePage } from "@/hooks/usePage";
 
 export function NavigationBar() {
   const { theme, setTheme } = useTheme();
   const { showModal } = useModal();
   const isMobile = useIsMobile();
+  const { notificationsEnabled, setNotificationsEnabled } = usePage();
   const [mounted, setMounted] = useState(false);
+
+  // Handle notification toggle
+  const handleNotificationToggle = (enabled: boolean) => {
+    setNotificationsEnabled(enabled);
+    localStorage.setItem("wipeCanvasNotifications", enabled.toString());
+  };
 
   // Only run on client-side to prevent hydration mismatch
   useEffect(() => {
@@ -66,22 +81,38 @@ export function NavigationBar() {
           </Button>
           <Separator
             orientation="vertical"
-            className="min-h-6 bg-separator-secondary md:hidden ml-2"
+            className="min-h-6 bg-separator-secondary xl:hidden ml-2"
           />
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setTheme(theme === "light" ? "dark" : "light");
-            }}
-          >
-            {!mounted ? (
-              <SunIcon className="h-4 w-3" />
-            ) : theme === "light" ? (
-              <MoonIcon className="h-4 w-3 stroke-white" />
-            ) : (
-              <SunIcon className="h-4 w-3" />
-            )}
-          </Button>
+          <div className="flex px-2 items-center">
+            <Button
+              className="bg-transparent"
+              onClick={() => {
+                handleNotificationToggle(!notificationsEnabled);
+              }}
+            >
+              {!notificationsEnabled && mounted ? (
+                <BellOff className="w-4 h-4 stroke-white fill-white" />
+              ) : (
+                <Bell className="w-4 h-4 stroke-white fill-white" />
+              )}
+            </Button>
+            <Separator
+              orientation="vertical"
+              className="min-h-6 bg-separator-secondary"
+            />
+            <Button
+              className="bg-transparent"
+              onClick={() => {
+                setTheme(theme === "light" ? "dark" : "light");
+              }}
+            >
+              {theme === "light" && mounted ? (
+                <MoonIcon className="h-4 w-4 stroke-white fill-white" />
+              ) : (
+                <SunIcon className="h-4 w-4 stroke-white" />
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

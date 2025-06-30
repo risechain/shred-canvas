@@ -1,14 +1,14 @@
-import { Button, Separator, Switch } from "@/components/ui";
+import { Button } from "@/components/ui";
 import { useNetworkConfig } from "@/hooks/contract/useNetworkConfig";
 import { useWallet } from "@/hooks/contract/useWallet";
 import { useNonceManager } from "@/hooks/useNonceManager";
-import { Loader2, Bell, BellOff } from "lucide-react";
-import { useEffect, useState, useCallback } from "react";
+import { usePage } from "@/hooks/usePage";
+import { Loader2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { encodeFunctionData, parseAbiItem } from "viem";
 import { useReadContract } from "wagmi";
 import canvasAbi from "../../../abi/canvasAbi.json";
-import { usePage } from "@/hooks/usePage";
 
 export function WipeCanvas() {
   const { contract, chain } = useNetworkConfig();
@@ -35,12 +35,6 @@ export function WipeCanvas() {
       setNotificationsEnabled(savedPreference === "true");
     }
   }, []);
-
-  // Handle notification toggle
-  const handleNotificationToggle = (enabled: boolean) => {
-    setNotificationsEnabled(enabled);
-    localStorage.setItem("wipeCanvasNotifications", enabled.toString());
-  };
 
   // Helper function to show toast only if notifications are enabled
   const showToastSuccess = useCallback(
@@ -232,24 +226,6 @@ export function WipeCanvas() {
           `Clear Canvas Cooldown ${formatTime(timeUntilNextWipe)}`
         )}
       </Button>
-
-      <Separator />
-
-      {/* Notification Toggle */}
-      <div className="flex items-center justify-between bg-accent/30 rounded-md px-3 py-2">
-        <div className="flex items-center gap-2">
-          {notificationsEnabled ? (
-            <Bell className="w-4 h-4 text-text-accent" />
-          ) : (
-            <BellOff className="w-4 h-4 text-text-accent" />
-          )}
-          <span className="text-sm text-text-accent">Notifications</span>
-        </div>
-        <Switch
-          checked={notificationsEnabled}
-          onCheckedChange={handleNotificationToggle}
-        />
-      </div>
     </div>
   );
 }
