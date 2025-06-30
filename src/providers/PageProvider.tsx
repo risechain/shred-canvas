@@ -25,13 +25,6 @@ export type TransactionQueue = {
 };
 
 export type PageContextType = {
-  /**
-   * Project view: type "grid" | "carousel"
-   * For Apps and Build page
-   */
-  view: View;
-  setView: (view: View) => void;
-
   isTxProcessing: boolean;
   setIsTxProcessing: (value: boolean) => void;
 
@@ -67,12 +60,12 @@ export type PageContextType = {
 
   localNonce: number;
   setLocalNonce: Dispatch<SetStateAction<number>>;
+
+  notificationsEnabled: boolean;
+  setNotificationsEnabled: (value: boolean) => void;
 };
 
 const initialState: PageContextType = {
-  view: "grid",
-  setView: () => {},
-
   isTxProcessing: false,
   setIsTxProcessing: () => {},
 
@@ -108,6 +101,9 @@ const initialState: PageContextType = {
 
   localNonce: 0,
   setLocalNonce: () => {},
+
+  notificationsEnabled: true,
+  setNotificationsEnabled: () => {},
 };
 
 export const PageContext = createContext<PageContextType>(initialState);
@@ -115,7 +111,6 @@ export const PageContext = createContext<PageContextType>(initialState);
 export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [view, setView] = useState<View>("grid");
   const [isTxProcessing, setIsTxProcessing] = useState<boolean>(false);
 
   const [processingType, setProcessingType] = useState<"batch" | "individual">(
@@ -140,12 +135,11 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isNonceInitialized, setIsNonceInitialized] = useState<boolean>(false);
   const [localNonce, setLocalNonce] = useState<number>(20);
 
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+
   // TODO: Break this into smaller chunks
   const providerValue = useMemo(() => {
     return {
-      view,
-      setView,
-
       isTxProcessing,
       setIsTxProcessing,
 
@@ -181,9 +175,11 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
 
       localNonce,
       setLocalNonce,
+
+      notificationsEnabled,
+      setNotificationsEnabled,
     };
   }, [
-    view,
     isTxProcessing,
     brushColor,
     rgbValues,
@@ -196,16 +192,20 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
     realTimeTx,
     isNonceInitialized,
     localNonce,
+    notificationsEnabled,
   ]);
 
   useEffect(() => {
     const initialBrushHex = localStorage.getItem("brush-hex") ?? "#1856bf";
     const initialBrushRgb = localStorage.getItem("brush-rgb");
     const initialBatchSize = localStorage.getItem("batch-size") ?? 20;
+    const initialNotification =
+      localStorage.getItem("wipeCanvasNotifications") === "true";
 
     setBrushColor(initialBrushHex);
     setRgbValues(initialBrushRgb ? JSON.parse(initialBrushRgb) : rgbValues);
     setBatchSize(Number(initialBatchSize));
+    setNotificationsEnabled(initialNotification);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

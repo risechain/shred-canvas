@@ -7,9 +7,9 @@ import { useNonceManager } from "@/hooks/useNonceManager";
 import { usePage } from "@/hooks/usePage";
 import { cn } from "@/lib/utils";
 import { TransactionQueue } from "@/providers/PageProvider";
+import Image from "next/image";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { HashLoader } from "react-spinners";
-import Image from "next/image";
 import { encodeFunctionData, parseAbiItem } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { useReadContract } from "wagmi";
@@ -23,7 +23,6 @@ type PixelWithTimestamp = TransactionQueue & {
 };
 
 const USER_PIXEL_FADE_DURATION = 3000; // 3 seconds
-
 
 export function DrawingCanvas() {
   // Canvas refs for double buffering
@@ -41,7 +40,6 @@ export function DrawingCanvas() {
     x: 0,
     y: 0,
   });
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   // Concurrent transaction system
   const batchIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -51,8 +49,18 @@ export function DrawingCanvas() {
 
   const { contract, chain, canvasSize } = useNetworkConfig();
 
-  const { brushColor, brushSize, rgbValues, setPendingTx, setCompletedTx, currentTool, setCurrentTool, setRgbValues, setBrushColor } =
-    usePage();
+  const {
+    brushColor,
+    brushSize,
+    rgbValues,
+    setPendingTx,
+    setCompletedTx,
+    currentTool,
+    setCurrentTool,
+    setRgbValues,
+    setBrushColor,
+    notificationsEnabled,
+  } = usePage();
 
   const { showModal } = useModal();
 
@@ -79,14 +87,6 @@ export function DrawingCanvas() {
   useEffect(() => {
     // Silent status tracking for nonce manager
   }, [wallet.account?.address, nonceInitialized, publicClient]);
-
-  // Load notification preference from localStorage
-  useEffect(() => {
-    const savedPreference = localStorage.getItem("wipeCanvasNotifications");
-    if (savedPreference !== null) {
-      setNotificationsEnabled(savedPreference === "true");
-    }
-  }, []);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -374,7 +374,7 @@ export function DrawingCanvas() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const context = canvas.getContext('2d');
+    const context = canvas.getContext("2d");
     if (!context) return;
 
     // Get pixel data at clicked position
@@ -385,18 +385,23 @@ export function DrawingCanvas() {
     const pickedColor = {
       r: pixel[0],
       g: pixel[1],
-      b: pixel[2]
+      b: pixel[2],
     };
 
     // Update brush color with picked color
     setRgbValues(pickedColor);
-    
+
     // Convert RGB to hex
     const rgbToHex = (r: number, g: number, b: number) => {
-      return "#" + [r, g, b].map(x => {
-        const hex = Math.max(0, Math.min(255, x)).toString(16);
-        return hex.length === 1 ? "0" + hex : hex;
-      }).join("");
+      return (
+        "#" +
+        [r, g, b]
+          .map((x) => {
+            const hex = Math.max(0, Math.min(255, x)).toString(16);
+            return hex.length === 1 ? "0" + hex : hex;
+          })
+          .join("")
+      );
     };
 
     const hexColor = rgbToHex(pickedColor.r, pickedColor.g, pickedColor.b);
@@ -742,7 +747,7 @@ export function DrawingCanvas() {
         loading={userPixels.length > 0 || currentBatchRef.current.length > 0}
         style={{ position: "absolute", bottom: 32, right: 32 }}
       />
-      
+
       {/* Loading overlay with theme-aware risu-dance.gif */}
       {!tilesData && (
         <div className="absolute aspect-square w-full max-w-[820px] max-h-[820px] flex items-center justify-center bg-foreground rounded-sm border shadow-lg border-border-primary">
@@ -766,7 +771,7 @@ export function DrawingCanvas() {
           </div>
         </div>
       )}
-      
+
       <canvas
         ref={canvasRef}
         onMouseDown={startDrawing}
@@ -777,7 +782,9 @@ export function DrawingCanvas() {
         onTouchMove={touchMove}
         onTouchEnd={stopDrawing}
         className={`touch-none aspect-square w-full max-w-[820px] max-h-[820px] rounded-sm border shadow-lg border-border-primary bg-foreground ${
-          currentTool === "eyedropper" ? "cursor-eyedropper" : "cursor-crosshair"
+          currentTool === "eyedropper"
+            ? "cursor-eyedropper"
+            : "cursor-crosshair"
         }`}
         style={{
           imageRendering: "pixelated",

@@ -9,13 +9,18 @@ import { encodeFunctionData, parseAbiItem } from "viem";
 import { useReadContract } from "wagmi";
 import { Switch } from "@mui/material";
 import canvasAbi from "../../../abi/canvasAbi.json";
+import { usePage } from "@/hooks/usePage";
 
 export function WipeCanvas() {
   const { contract, chain } = useNetworkConfig();
-  const { shredClient, syncClient, account, wallet, publicClient } = useWallet();
+
+  const { shredClient, syncClient, account, wallet, publicClient } =
+    useWallet();
+
+  const { setNotificationsEnabled, notificationsEnabled } = usePage();
+
   const [isWiping, setIsWiping] = useState(false);
   const [timeUntilNextWipe, setTimeUntilNextWipe] = useState<number>(0);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   // Initialize nonce manager
   const {
@@ -39,17 +44,23 @@ export function WipeCanvas() {
   };
 
   // Helper function to show toast only if notifications are enabled
-  const showToastSuccess = useCallback((message: string, options?: { duration?: number }) => {
-    if (notificationsEnabled) {
-      toast.success(message, options);
-    }
-  }, [notificationsEnabled]);
+  const showToastSuccess = useCallback(
+    (message: string, options?: { duration?: number }) => {
+      if (notificationsEnabled) {
+        toast.success(message, options);
+      }
+    },
+    [notificationsEnabled]
+  );
 
-  const showToastError = useCallback((message: string, options?: { duration?: number }) => {
-    if (notificationsEnabled) {
-      toast.error(message, options);
-    }
-  }, [notificationsEnabled]);
+  const showToastError = useCallback(
+    (message: string, options?: { duration?: number }) => {
+      if (notificationsEnabled) {
+        toast.error(message, options);
+      }
+    },
+    [notificationsEnabled]
+  );
 
   // Read the next wipe time from the contract
   const { data: nextWipeTime, refetch: refetchNextWipeTime } = useReadContract({
@@ -124,7 +135,7 @@ export function WipeCanvas() {
         value: BigInt(0),
         chainId: chain.id,
       });
-      
+
       // Send transaction (don't await receipt, similar to DrawingCanvas pattern)
       syncClient
         .sendRawTransactionSync({
@@ -136,9 +147,15 @@ export function WipeCanvas() {
           });
         })
         .catch((txError) => {
-          const errorMessage = txError instanceof Error ? txError.message.toLowerCase() : String(txError).toLowerCase();
-          
-          if (errorMessage.includes("wipeonCooldown") || errorMessage.includes("cooldown")) {
+          const errorMessage =
+            txError instanceof Error
+              ? txError.message.toLowerCase()
+              : String(txError).toLowerCase();
+
+          if (
+            errorMessage.includes("wipeonCooldown") ||
+            errorMessage.includes("cooldown")
+          ) {
             showToastError("Canvas is on cooldown. Please wait for the timer.");
           } else if (errorMessage.includes("insufficient")) {
             showToastError("Insufficient funds. Please fund your wallet.");
@@ -152,15 +169,26 @@ export function WipeCanvas() {
         duration: 3000,
       });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
-      
-      if (errorMessage.includes("wipeonCooldown") || errorMessage.includes("cooldown")) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message.toLowerCase()
+          : String(error).toLowerCase();
+
+      if (
+        errorMessage.includes("wipeonCooldown") ||
+        errorMessage.includes("cooldown")
+      ) {
         showToastError("Canvas is on cooldown. Please wait for the timer.");
       } else if (errorMessage.includes("insufficient")) {
         showToastError("Insufficient funds. Please fund your wallet.");
-      } else if (errorMessage.includes("nonce") || errorMessage.includes("replacement")) {
+      } else if (
+        errorMessage.includes("nonce") ||
+        errorMessage.includes("replacement")
+      ) {
         resetNonce().catch(() => {});
-        showToastError("Transaction failed due to nonce conflict. Please try again.");
+        showToastError(
+          "Transaction failed due to nonce conflict. Please try again."
+        );
       } else {
         showToastError("Failed to wipe canvas. Please try again.");
       }
@@ -224,17 +252,17 @@ export function WipeCanvas() {
           size="small"
           aria-label="Toggle notifications"
           sx={{
-            '& .MuiSwitch-switchBase': {
-              color: 'var(--text-accent)',
-              '&.Mui-checked': {
-                color: 'var(--purple-10)',
+            "& .MuiSwitch-switchBase": {
+              color: "var(--text-accent)",
+              "&.Mui-checked": {
+                color: "var(--purple-10)",
               },
-              '&.Mui-checked + .MuiSwitch-track': {
-                backgroundColor: 'var(--purple-10)',
+              "&.Mui-checked + .MuiSwitch-track": {
+                backgroundColor: "var(--purple-10)",
               },
             },
-            '& .MuiSwitch-track': {
-              backgroundColor: 'var(--accent)',
+            "& .MuiSwitch-track": {
+              backgroundColor: "var(--accent)",
               opacity: 0.5,
             },
           }}
