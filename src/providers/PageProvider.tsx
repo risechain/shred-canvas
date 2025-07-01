@@ -1,3 +1,4 @@
+import { useTheme } from "next-themes";
 import {
   createContext,
   Dispatch,
@@ -6,9 +7,11 @@ import {
   useMemo,
   useState,
 } from "react";
+import { Toaster } from "sonner";
 
 export type View = "grid" | "carousel";
 export type Tool = "brush" | "eyedropper";
+export type Theme = "light" | "dark" | "system";
 
 type RgbValues = {
   r: number;
@@ -117,6 +120,8 @@ export const PageContext = createContext<PageContextType>(initialState);
 export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const { theme } = useTheme();
+
   const [isTxProcessing, setIsTxProcessing] = useState<boolean>(false);
 
   const [processingType, setProcessingType] = useState<"batch" | "individual">(
@@ -225,6 +230,14 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <PageContext.Provider value={providerValue}>
+      <Toaster
+        position="bottom-left"
+        visibleToasts={3}
+        expand={false}
+        richColors
+        closeButton
+        theme={(theme ?? "system") as Theme}
+      />
       {children}
     </PageContext.Provider>
   );
