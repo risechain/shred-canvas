@@ -123,8 +123,8 @@ export function WipeCanvas() {
         to: contract,
         data,
         nonce,
-        gas: BigInt(5_000_000),
-        gasPrice: BigInt(100),
+        gas: BigInt(10_000_000), // Increased gas limit
+        gasPrice: BigInt(100), // Increased gas price to match network
         value: BigInt(0),
         chainId: chain.id,
       });
