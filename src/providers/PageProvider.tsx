@@ -1,3 +1,4 @@
+import { useTheme } from "next-themes";
 import {
   createContext,
   Dispatch,
@@ -6,9 +7,11 @@ import {
   useMemo,
   useState,
 } from "react";
+import { Toaster } from "sonner";
 
 export type View = "grid" | "carousel";
 export type Tool = "brush" | "eyedropper";
+export type Theme = "light" | "dark" | "system";
 
 type RgbValues = {
   r: number;
@@ -63,6 +66,9 @@ export type PageContextType = {
 
   notificationsEnabled: boolean;
   setNotificationsEnabled: (value: boolean) => void;
+
+  bgCanvas: string;
+  setBgCanvas: (value: string) => void;
 };
 
 const initialState: PageContextType = {
@@ -104,6 +110,9 @@ const initialState: PageContextType = {
 
   notificationsEnabled: true,
   setNotificationsEnabled: () => {},
+
+  bgCanvas: "",
+  setBgCanvas: () => {},
 };
 
 export const PageContext = createContext<PageContextType>(initialState);
@@ -111,12 +120,15 @@ export const PageContext = createContext<PageContextType>(initialState);
 export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const { theme } = useTheme();
+
   const [isTxProcessing, setIsTxProcessing] = useState<boolean>(false);
 
   const [processingType, setProcessingType] = useState<"batch" | "individual">(
     "batch"
   );
 
+  const [bgCanvas, setBgCanvas] = useState<string>("");
   const [brushColor, setBrushColor] = useState("");
   const [brushSize, setBrushSize] = useState(5);
   const [currentTool, setCurrentTool] = useState<Tool>("brush");
@@ -178,6 +190,9 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
 
       notificationsEnabled,
       setNotificationsEnabled,
+
+      bgCanvas,
+      setBgCanvas,
     };
   }, [
     isTxProcessing,
@@ -193,6 +208,7 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
     isNonceInitialized,
     localNonce,
     notificationsEnabled,
+    bgCanvas,
   ]);
 
   useEffect(() => {
@@ -202,15 +218,26 @@ export const PageProvider: React.FC<{ children: React.ReactNode }> = ({
     const initialNotification =
       localStorage.getItem("wipeCanvasNotifications") === "true";
 
+    const initialBgCanvas = localStorage.getItem("bg-canvas") ?? "default";
+
     setBrushColor(initialBrushHex);
     setRgbValues(initialBrushRgb ? JSON.parse(initialBrushRgb) : rgbValues);
     setBatchSize(Number(initialBatchSize));
     setNotificationsEnabled(initialNotification);
+    setBgCanvas(initialBgCanvas);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <PageContext.Provider value={providerValue}>
+      <Toaster
+        position="bottom-left"
+        visibleToasts={3}
+        expand={false}
+        richColors
+        closeButton
+        theme={(theme ?? "system") as Theme}
+      />
       {children}
     </PageContext.Provider>
   );

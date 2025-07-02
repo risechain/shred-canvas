@@ -42,7 +42,7 @@ export function EmbeddedWalletContent() {
   const storedWallet = getStoredWallet();
 
   return (
-    <div>
+    <div className="bg-accent/90 p-4 rounded-sm shadow-lg border border-foreground/15">
       <p className="text-md md:text-lg text-text-accent pb-5">
         Embedded Wallet
       </p>

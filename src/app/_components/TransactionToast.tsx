@@ -5,7 +5,10 @@ interface TransactionToastProps {
   onDismiss: () => void;
 }
 
-export function TransactionToast({ pixelCount, onDismiss }: TransactionToastProps) {
+export function TransactionToast({
+  pixelCount,
+  onDismiss,
+}: Readonly<TransactionToastProps>) {
   return (
     <div
       className="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg"
@@ -23,13 +26,13 @@ export function TransactionToast({ pixelCount, onDismiss }: TransactionToastProp
       >
         <path
           d="M10 2.5L12.5 7.5L17.5 8.5L14 12L15 17.5L10 15L5 17.5L6 12L2.5 8.5L7.5 7.5L10 2.5Z"
-          fill="currentColor"
-          stroke="currentColor"
+          fill="var(--color-text-contrast)"
+          stroke="var(--color-text-contrast)"
           strokeWidth="1.5"
           strokeLinejoin="round"
         />
       </svg>
-      <span className="font-medium">
+      <span className="font-medium text-text-contrast">
         Transaction complete! {pixelCount} pixel
         {pixelCount > 1 ? "s" : ""} painted
       </span>
@@ -46,7 +49,7 @@ export function TransactionToast({ pixelCount, onDismiss }: TransactionToastProp
         >
           <path
             d="M12 4L4 12M4 4L12 12"
-            stroke="currentColor"
+            stroke="var(--color-text-contrast)"
             strokeWidth="1.5"
             strokeLinecap="round"
           />

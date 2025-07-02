@@ -1,16 +1,15 @@
 import { DynamicFavicon } from "@/components/DynamicFavicon";
 import { Modal } from "@/components/Modal";
 import { AppProvider } from "@/providers";
-import { Toaster } from "sonner";
 
 import clsx from "clsx";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 
+import { NavigationBar } from "@/components/NavigationBar";
 import "@fontsource/inter-tight";
 import "@fontsource/space-grotesk";
 import "@styles/globals.css";
-import { NavigationBar } from "@/components/NavigationBar";
 
 const fkDisplay = localFont({
   src: "../fonts/FKDisplay-RegularAlt.woff",
@@ -54,13 +53,6 @@ export default function RootLayout({
         <AppProvider>
           <DynamicFavicon />
           <Modal />
-          <Toaster
-            position="bottom-left"
-            visibleToasts={3}
-            expand={false}
-            richColors
-            closeButton
-          />
           <main className="mx-auto max-w-10xl w-full h-auto relative min-h-vh">
             <div className="bg-background p-3 rounded-md1 h-full rounded-md">
               <NavigationBar />

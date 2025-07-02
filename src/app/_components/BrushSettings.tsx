@@ -6,19 +6,30 @@ import {
   DropdownMenuTrigger,
   Input,
   Separator,
+  ToggleGroup,
+  ToggleGroupItem,
 } from "@/components/ui";
 import { usePage } from "@/hooks/usePage";
-import { PRESET_COLORS } from "@/lib/constants";
+import { PRESET_BACKGROUNDS, PRESET_COLORS } from "@/lib/constants";
 import { handleCopy } from "@/lib/utils";
-import { CopyIcon, MinusIcon, PlusIcon, PaintbrushIcon, DropletIcon } from "lucide-react";
+import { CopyIcon, MinusIcon, Pipette, PlusIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { HexColorInput, HexColorPicker } from "react-colorful";
 
 type ColorCode = "HEX" | "RGB";
 
 export function BrushSettings() {
-  const { brushColor, setBrushColor, rgbValues, setRgbValues, brushSize, currentTool, setCurrentTool } =
-    usePage();
+  const {
+    brushColor,
+    setBrushColor,
+    rgbValues,
+    setRgbValues,
+    brushSize,
+    currentTool,
+    setCurrentTool,
+    bgCanvas,
+    setBgCanvas,
+  } = usePage();
 
   const [brushColors, setBrushColors] = useState<string[]>([]);
   const [colorCode, setColorCode] = useState<ColorCode>("HEX");
@@ -102,6 +113,19 @@ export function BrushSettings() {
     localStorage.setItem("brush-hex", newBrushColor);
   }
 
+  function handleSetBgCanvas(name: string) {
+    setBgCanvas(name);
+    localStorage.setItem("bg-canvas", name);
+  }
+
+  function getCanvasBg(bg: string) {
+    if (bg.includes("bg-")) {
+      return { backgroundImage: `url(/images/${bg})` };
+    } else {
+      return { background: bg };
+    }
+  }
+
   useEffect(() => {
     const initialColorCode = (localStorage.getItem("color-code") ??
       "HEX") as ColorCode;
@@ -118,37 +142,15 @@ export function BrushSettings() {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-md md:text-lg text-text-accent">Canvas Tools</p>
-      
-      {/* Tool Selection */}
-      <div className="flex gap-2">
-        <Button
-          variant={currentTool === "brush" ? "default" : "secondary"}
-          onClick={() => setCurrentTool("brush")}
-          className="flex items-center gap-2 flex-1"
-        >
-          <PaintbrushIcon size={16} />
-          Brush
-        </Button>
-        <Button
-          variant={currentTool === "eyedropper" ? "default" : "secondary"}
-          onClick={() => setCurrentTool("eyedropper")}
-          className="flex items-center gap-2 flex-1"
-        >
-          <DropletIcon size={16} />
-          Eyedropper
-        </Button>
-      </div>
-
-      <Separator />
       <div className="flex flex-wrap gap-3 items-center">
         <div
-          className="w-16 h-16 rounded-sm"
+          className="w-16 h-16 rounded-sm border border-foreground/25 shadow-lg"
           style={{ backgroundColor: brushColor }}
         />
         <div className="">
           <div className="flex gap-2">
             <p className="text-sm md:text-md text-text-accent">Size:</p>
-            <p className="text-sm md:text-md">{brushSize/5}px</p>
+            <p className="text-sm md:text-md">{brushSize / 5}px</p>
           </div>
           <div className="flex gap-2">
             <p className="text-sm md:text-md text-text-accent">HEX:</p>
@@ -162,23 +164,40 @@ export function BrushSettings() {
           </div>
         </div>
       </div>
-
       <Separator />
-
-      <div className="bg-accent items-center justify-center p-3 space-y-3 rounded-md">
+      <div className="bg-accent items-center justify-center p-3 space-y-3 rounded-md shadow-lg border border-foreground/15">
         <HexColorPicker
           color={brushColor}
           onChange={handleHexChange}
           style={{ width: "100%", height: "280px" }}
+          className="border border-foreground/50 rounded-sm"
         />
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1 items-center">
+          <ToggleGroup type="single" value={currentTool}>
+            <ToggleGroupItem
+              value="eyedropper"
+              data-value={currentTool}
+              className="data-[value=brush]:bg-background/50 border border-foreground/50"
+              onClick={() => {
+                setCurrentTool(
+                  currentTool === "eyedropper" ? "brush" : "eyedropper"
+                );
+              }}
+            >
+              <Pipette
+                data-active={currentTool === "eyedropper"}
+                className="data-[active=true]:stroke-white"
+              />
+            </ToggleGroupItem>
+          </ToggleGroup>
+
           {PRESET_COLORS.map((presetColor) => {
             return (
               <Button
                 data-selected={presetColor === brushColor}
                 variant="ghost"
                 key={presetColor}
-                className="rounded border border-foreground/15 w-6 h-6 p-0 hover:scale-125 transition-all data-[selected=true]:border-foreground/50 data-[selected=true]:mx-1 data-[selected=true]:scale-125"
+                className="rounded border border-foreground/50 w-6 h-6 p-0 hover:scale-125 transition-all data-[selected=true]:border-foreground/50 data-[selected=true]:mx-1 data-[selected=true]:scale-125"
                 style={{ backgroundColor: presetColor }}
                 onClick={() => handleHexChange(presetColor)}
               />
@@ -197,7 +216,7 @@ export function BrushSettings() {
                     key={presetColor}
                     variant="ghost"
                     data-selected={presetColor === brushColor}
-                    className="rounded border border-foreground/25 w-6 h-6 p-0 hover:scale-125 transition-all data-[selected=true]:border-foreground/50 data-[selected=true]:mx-1 data-[selected=true]:scale-125"
+                    className="rounded border border-foreground/75 w-6 h-6 p-0 hover:scale-125 transition-all data-[selected=true]:border-foreground/50 data-[selected=true]:mx-1 data-[selected=true]:scale-125"
                     style={{ backgroundColor: presetColor }}
                     onClick={() => handleHexChange(presetColor)}
                   />
@@ -209,7 +228,7 @@ export function BrushSettings() {
             <Button
               disabled={brushColors.length >= 10}
               variant="secondary"
-              className="rounded-r w-6 h-6 p-0"
+              className="rounded-r w-6 h-6 p-0 border border-foreground/25"
               onClick={() => handleAddBrushColor(brushColor)}
             >
               <PlusIcon />
@@ -219,7 +238,7 @@ export function BrushSettings() {
                 <Separator orientation="vertical" />
                 <Button
                   variant="secondary"
-                  className="rounded-l w-6 h-6 p-0"
+                  className="rounded-l w-6 h-6 p-0 border border-foreground/25"
                   onClick={() => handleRemoveBrushColor(brushColor)}
                 >
                   <MinusIcon />
@@ -229,8 +248,7 @@ export function BrushSettings() {
           </div>
         </div>
       </div>
-
-      <div className="flex flex-wrap">
+      <div className="flex flex-wrap shadow-lg border border-foreground/25 rounded-sm">
         <DropdownMenu>
           <DropdownMenuTrigger asChild className="min-w-16 rounded-l-sm">
             <Button className="rounded-r-none rounded-l-sm">{colorCode}</Button>
@@ -298,10 +316,39 @@ export function BrushSettings() {
             handleCopy(value);
           }}
         >
-          <CopyIcon color="white" />
+          <CopyIcon className="stroke-white" />
         </Button>
       </div>
 
+      <Separator />
+      <div className="space-y-2">
+        <p className="text-md lg:text-lg text-text-accent">Backgrounds</p>
+        <div className="flex flex-wrap gap-2 items-center justify-between">
+          <div className="flex flex-wrap gap-2 items-center">
+            {PRESET_BACKGROUNDS.map((bg) => {
+              return (
+                <Button
+                  data-selected={bg === bgCanvas}
+                  variant="ghost"
+                  key={bg}
+                  className="bg-cover bg-no-repeat rounded border border-foreground/75 w-6 h-6 p-0 hover:scale-175 transition-all data-[selected=true]:border-foreground/50 data-[selected=true]:mx-1 data-[selected=true]:scale-125"
+                  style={{
+                    ...getCanvasBg(bg),
+                  }}
+                  onClick={() => handleSetBgCanvas(bg)}
+                />
+              );
+            })}
+          </div>
+          <Button
+            variant="ghost"
+            className="p-1"
+            onClick={() => handleSetBgCanvas("")}
+          >
+            Reset
+          </Button>
+        </div>
+      </div>
       <Separator />
     </div>
   );

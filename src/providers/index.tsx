@@ -7,6 +7,7 @@ import { ModalProvider } from "./ModalProvider";
 import { PageProvider } from "./PageProvider";
 import { QueryClientProvider } from "./QueryProvider";
 import { ThemeProvider } from "./ThemeProvider";
+import { WebSocketProvider } from "./WebSocketProvider";
 
 type AppProviderProps = {
   children: React.ReactNode;
@@ -16,13 +17,15 @@ export function AppProvider({ children }: Readonly<AppProviderProps>) {
   return (
     <WagmiProvider config={config} reconnectOnMount={true}>
       <QueryClientProvider>
-        <ThemeProvider attribute="class" enableSystem>
-          <PageProvider>
-            <ModalProvider>
-              <SidebarProvider>{children}</SidebarProvider>
-            </ModalProvider>
-          </PageProvider>
-        </ThemeProvider>
+        <WebSocketProvider>
+          <ThemeProvider attribute="class" enableSystem>
+            <PageProvider>
+              <ModalProvider>
+                <SidebarProvider>{children}</SidebarProvider>
+              </ModalProvider>
+            </PageProvider>
+          </ThemeProvider>
+        </WebSocketProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );

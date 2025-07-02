@@ -10,11 +10,14 @@ import { BrushSettings } from "./_components/BrushSettings";
 import { DrawingCanvas } from "./_components/DrawingCanvas";
 import { EmbeddedWalletContent } from "./_components/EmbeddedWallet";
 import { WipeCanvas } from "./_components/WipeCanvas";
+import { usePage } from "@/hooks/usePage";
 
 export function EmbeddedWallet() {
+  const { bgCanvas } = usePage();
   return (
     <ResizablePanel
-      className="p-4 flex flex-col gap-4 bg-accent/50 max-xl:hidden"
+      data-transparent={bgCanvas.includes("bg-")}
+      className="p-4 flex flex-col gap-4 bg-[var(--gray-2)] data-[transparent=true]:bg-background/85 max-xl:hidden"
       defaultSize={20}
       minSize={10}
       maxSize={30}
@@ -27,9 +30,11 @@ export function EmbeddedWallet() {
 }
 
 export function Settings() {
+  const { bgCanvas } = usePage();
   return (
     <ResizablePanel
-      className="p-4 flex flex-col gap-4 bg-accent/50 max-lg:hidden"
+      data-transparent={bgCanvas.includes("bg-")}
+      className="p-4 flex flex-col gap-4 bg-[var(--gray-2)] data-[transparent=true]:bg-background/85 max-lg:hidden"
       defaultSize={20}
       minSize={15}
       maxSize={25}
@@ -41,17 +46,36 @@ export function Settings() {
 }
 
 export default function Home() {
+  const { bgCanvas } = usePage();
+
+  function getCanvasBg() {
+    if (bgCanvas.includes("bg-")) {
+      return { backgroundImage: `url(/images/${bgCanvas})` };
+    } else {
+      return { background: bgCanvas };
+    }
+  }
+
   return (
     <ResizablePanelGroup
       direction="horizontal"
-      className="flex h-full max-h-[calc(100%_-_55px)] overflow-auto rounded-b-md"
+      className="flex h-full max-h-[calc(100%_-_55px)] overflow-auto rounded-b-md bg-accent dark:bg-accent/35 bg-cover bg-no-repeat"
+      style={{
+        ...getCanvasBg(),
+      }}
     >
       <EmbeddedWallet />
-      <ResizableHandle withHandle className="bg-accent max-xl:hidden" />
+      <ResizableHandle
+        withHandle
+        className="bg-accent max-xl:hidden border border-accent-foreground dark:border-border-primary"
+      />
       <ResizablePanel defaultSize={60}>
         <DrawingCanvas />
       </ResizablePanel>
-      <ResizableHandle withHandle className="bg-accent max-lg:hidden" />
+      <ResizableHandle
+        withHandle
+        className="bg-accent max-lg:hidden border border-accent-foreground dark:border-border-primary"
+      />
       <Settings />
     </ResizablePanelGroup>
   );
