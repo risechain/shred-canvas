@@ -22,7 +22,7 @@ export function EmbeddedWallet() {
       minSize={10}
       maxSize={30}
     >
-      <p className="text-xl md:text-3xl font-medium">Paint Canvas</p>
+      <p className="text-xl md:text-3xl font-medium">Shred Canvas</p>
       <Separator />
       <EmbeddedWalletContent />
     </ResizablePanel>
