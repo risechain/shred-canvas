@@ -26,7 +26,7 @@ export function getNetworkConfig(environment: string) {
       return {
         chain: riseTestnet,
         contract: (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ||
-          "0x6e8152909F0e0f6bD7cbf3B8aE5E6a8aA5fA5198") as Address,
+          "0x39A9625E535e7E6c65b4B63E82Edf0c341C678C7") as Address,
         wss:
           process.env.NEXT_PUBLIC_RPC_URL_WSS ||
           "wss://testnet.riselabs.xyz/ws",

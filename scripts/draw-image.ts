@@ -17,7 +17,7 @@ config({ path: path.join(__dirname, '.env') });
 
 // Configuration
 const CANVAS_SIZE = 64;
-const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || '0x6e8152909F0e0f6bD7cbf3B8aE5E6a8aA5fA5198';
+const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || '0x39A9625E535e7E6c65b4B63E82Edf0c341C678C7';
 const RPC_URL = process.env.RPC_URL || 'https://testnet.riselabs.xyz/';
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 const BATCH_SIZE = parseInt(process.env.BATCH_SIZE || '64');
