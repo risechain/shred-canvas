@@ -34,7 +34,7 @@ export function WipeCanvas() {
     if (savedPreference !== null) {
       setNotificationsEnabled(savedPreference === "true");
     }
-  }, []);
+  }, [setNotificationsEnabled]);
 
   // Helper function to show toast only if notifications are enabled
   const showToastSuccess = useCallback(

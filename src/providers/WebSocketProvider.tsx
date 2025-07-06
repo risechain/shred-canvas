@@ -99,6 +99,10 @@ export function WebSocketProvider({ children }: Readonly<ProviderProps>) {
       });
     });
 
+    manager.on("reconnected", () => {
+      console.log("WebSocket reconnected - contract events will resume");
+    });
+
     return () => {
       console.log("WebSocket provider: cleaning up");
       if (managerRef.current) {

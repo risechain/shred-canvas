@@ -7,9 +7,10 @@ import { useNonceManager } from "@/hooks/useNonceManager";
 import { usePage } from "@/hooks/usePage";
 import { cn } from "@/lib/utils";
 import { TransactionQueue } from "@/providers/PageProvider";
+import { useWebSocket } from "@/providers/WebSocketProvider";
 import { Tooltip } from "@mui/material";
 import Image from "next/image";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { HashLoader } from "react-spinners";
 import { encodeFunctionData, parseAbiItem } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -80,6 +81,9 @@ export function DrawingCanvas() {
   } = useWallet();
 
   const isMobile = useIsMobile();
+  
+  // WebSocket connection status
+  const { manager: wsManager, contractEvents } = useWebSocket();
 
   // Initialize nonce manager
   const {
@@ -117,27 +121,38 @@ export function DrawingCanvas() {
 
   // Set up blockchain event listeners
   useEffect(() => {
-    // Listen for tiles painted events
-    const unwatchPainted = shredClient.watchShredEvent({
-      event: parseAbiItem(
-        "event tilesPainted(uint256[] indices, uint8 r, uint8 g, uint8 b)"
-      ),
-      onLogs: (logs) => {
-        onBlockchainUpdate(logs[0]?.args);
-      },
-    });
+    let unwatchPainted: (() => void) | undefined;
+    let unwatchWiped: (() => void) | undefined;
 
-    // Listen for canvas wiped events
-    const unwatchWiped = shredClient.watchShredEvent({
-      event: parseAbiItem(
-        "event canvasWiped(address indexed wiper, uint256 timestamp)"
-      ),
-      onLogs: () => {
-        // When canvas is wiped, clear the blockchain pixels and refetch tiles
-        setBlockchainPixels([]);
-        refetchTiles();
-      },
-    });
+    const setupEventListeners = () => {
+      console.log("Setting up direct blockchain event listeners");
+      // Listen for tiles painted events
+      unwatchPainted = shredClient.watchShredEvent({
+        event: parseAbiItem(
+          "event tilesPainted(uint256[] indices, uint8 r, uint8 g, uint8 b)"
+        ),
+        onLogs: (logs) => {
+          console.log("Direct blockchain tilesPainted event:", logs[0]?.args);
+          onBlockchainUpdate(logs[0]?.args);
+        },
+      });
+
+      // Listen for canvas wiped events
+      unwatchWiped = shredClient.watchShredEvent({
+        event: parseAbiItem(
+          "event canvasWiped(address indexed wiper, uint256 timestamp)"
+        ),
+        onLogs: () => {
+          console.log("Direct blockchain canvasWiped event");
+          // When canvas is wiped, clear the blockchain pixels and refetch tiles
+          setBlockchainPixels([]);
+          refetchTiles();
+        },
+      });
+    };
+
+    // Set up initial event listeners
+    setupEventListeners();
 
     // Cleanup function to stop watching when component unmounts
     return () => {
@@ -149,7 +164,88 @@ export function DrawingCanvas() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array ensures this runs only once
+  }, [shredClient]); // Re-run when shredClient changes (on reconnections)
+
+  // Buffer 2 (Source of Truth) Management
+  const onBlockchainUpdate = useCallback((props?: {
+    indices?: readonly bigint[];
+    r?: number;
+    g?: number;
+    b?: number;
+  }) => {
+    if (!props?.indices) return;
+
+    const newPixels = props.indices.map((index) => {
+      const coordinate = getCoordinatesFromIndex(Number(index));
+      return {
+        x: Number(coordinate?.x ?? 0),
+        y: Number(coordinate?.y ?? 0),
+        r: Number(props.r ?? 0),
+        g: Number(props.g ?? 0),
+        b: Number(props.b ?? 0),
+      };
+    });
+
+    // Immediately update Buffer 2 (source of truth)
+    setBlockchainPixels((prev) => {
+      const updated = [...prev];
+      newPixels.forEach((newPixel) => {
+        // Remove any existing pixel at the same coordinate and add new one
+        const index = updated.findIndex(
+          (p) => p.x === newPixel.x && p.y === newPixel.y
+        );
+        if (index >= 0) {
+          updated[index] = newPixel;
+        } else {
+          updated.push(newPixel);
+        }
+      });
+      return updated;
+    });
+
+    // Remove corresponding pixels from user overlay (they're now confirmed)
+    removeUserPixels(newPixels);
+  }, []);
+
+  // Handle WebSocket contract events as backup
+  useEffect(() => {
+    console.log("Canvas contractEvents updated, length:", contractEvents.length);
+    if (!contractEvents.length) return;
+
+    const latestEvent = contractEvents[contractEvents.length - 1];
+    console.log("Processing latest event:", latestEvent);
+
+    if (latestEvent.eventName === "tilesPainted" && latestEvent.args) {
+      console.log("Processing tilesPainted event");
+      const args = latestEvent.args as { indices: bigint[]; r: number; g: number; b: number };
+      onBlockchainUpdate({
+        indices: Array.isArray(args.indices) ? args.indices : [args.indices],
+        r: Number(args.r),
+        g: Number(args.g),
+        b: Number(args.b),
+      });
+    } else if (latestEvent.eventName === "canvasWiped") {
+      console.log("Processing canvasWiped event");
+      setBlockchainPixels([]);
+      refetchTiles();
+    }
+  }, [contractEvents, onBlockchainUpdate, refetchTiles, setBlockchainPixels]);
+
+  // Handle WebSocket reconnections
+  useEffect(() => {
+    if (!wsManager) return;
+
+    const handleReconnected = () => {
+      // Refetch tiles after reconnection to ensure we have the latest state
+      refetchTiles();
+    };
+
+    wsManager.on("reconnected", handleReconnected);
+
+    return () => {
+      wsManager.off("reconnected", handleReconnected);
+    };
+  }, [wsManager, refetchTiles]);
 
   const client = useMemo(() => {
     if (!getStoredWallet()?.privateKey) return;
@@ -293,48 +389,6 @@ export function DrawingCanvas() {
     );
   };
 
-  // Buffer 2 (Source of Truth) Management
-  const onBlockchainUpdate = (props?: {
-    indices?: readonly bigint[];
-    r?: number;
-    g?: number;
-    b?: number;
-  }) => {
-    if (!props?.indices) return;
-
-    // Blockchain update received
-
-    const newPixels = props.indices.map((index) => {
-      const coordinate = getCoordinatesFromIndex(Number(index));
-      return {
-        x: coordinate?.x ?? 0,
-        y: coordinate?.y ?? 0,
-        r: props.r ?? 0,
-        g: props.g ?? 0,
-        b: props.b ?? 0,
-      };
-    });
-
-    // Immediately update Buffer 2 (source of truth)
-    setBlockchainPixels((prev) => {
-      const updated = [...prev];
-      newPixels.forEach((newPixel) => {
-        // Remove any existing pixel at the same coordinate and add new one
-        const index = updated.findIndex(
-          (p) => p.x === newPixel.x && p.y === newPixel.y
-        );
-        if (index >= 0) {
-          updated[index] = newPixel;
-        } else {
-          updated.push(newPixel);
-        }
-      });
-      return updated;
-    });
-
-    // Remove corresponding pixels from user overlay (they're now confirmed)
-    removeUserPixels(newPixels);
-  };
 
   // Fade user pixels over time
   const updateUserPixelOpacity = () => {
@@ -592,13 +646,15 @@ export function DrawingCanvas() {
     transactions: TransactionQueue[]
   ) {
     transactions.forEach((tx) => {
-      const index = coordToBufferIndex(tx.x, tx.y);
+      const index = coordToBufferIndex(Number(tx.x), Number(tx.y));
       const pixelIndex = index * 4;
 
-      data[pixelIndex] = tx.r; // R
-      data[pixelIndex + 1] = tx.g; // G
-      data[pixelIndex + 2] = tx.b; // B
-      data[pixelIndex + 3] = 255; // Alpha
+      if (pixelIndex >= 0 && pixelIndex < data.length - 3) {
+        data[pixelIndex] = Number(tx.r); // R
+        data[pixelIndex + 1] = Number(tx.g); // G
+        data[pixelIndex + 2] = Number(tx.b); // B
+        data[pixelIndex + 3] = 255; // Alpha
+      }
     });
   }
 
@@ -623,9 +679,10 @@ export function DrawingCanvas() {
       const y = i % canvasSize;
       const index = (y * canvasSize + x) * 4;
 
-      data[index] = Number(rBuffer[i]); // R
-      data[index + 1] = Number(gBuffer[i]); // G
-      data[index + 2] = Number(bBuffer[i]); // B
+      // Safely convert potential BigInt values to numbers
+      data[index] = Number(rBuffer[i] || 0); // R
+      data[index + 1] = Number(gBuffer[i] || 0); // G
+      data[index + 2] = Number(bBuffer[i] || 0); // B
       data[index + 3] = 255; // Alpha
     }
 
@@ -756,7 +813,7 @@ export function DrawingCanvas() {
         clearTimeout(batchIntervalRef.current);
       }
     };
-  }, []);
+  }, [bgCanvas]);
 
   return (
     <div

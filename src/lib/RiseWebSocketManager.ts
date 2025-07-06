@@ -59,6 +59,7 @@ export class RiseWebSocketManager extends EventEmitter {
 
       this.ws.onopen = () => {
         console.log("🟢 WebSocket connected to RISE");
+        const wasReconnecting = this.reconnectAttempts > 0;
         this.isConnecting = false;
         this.reconnectAttempts = 0;
         this.emit("connected");
@@ -69,8 +70,13 @@ export class RiseWebSocketManager extends EventEmitter {
           this.ws?.send(JSON.stringify(message));
         }
 
-        // Subscribe to ChatApp contract by default
+        // Subscribe to Canvas contract by default
         this.subscribeToContract(CANVAS_ADDRESS);
+        
+        // Emit reconnection event for components to re-establish their listeners
+        if (wasReconnecting) {
+          this.emit("reconnected");
+        }
       };
 
       this.ws.onclose = (event: CloseEvent) => {
@@ -135,12 +141,15 @@ export class RiseWebSocketManager extends EventEmitter {
     // Event notification from subscription
     if (message.method === "rise_subscription" && message.params) {
       const { subscription, result } = message.params;
+      console.log("📨 Received subscription event:", { subscription, result });
       const sub = this.subscriptions.get(subscription);
 
       if (sub && result) {
+        console.log("📨 Processing event with subscription:", subscription);
         // Decode the event
         try {
           const decodedEvent = this.decodeEvent(result);
+          console.log("📨 Decoded event:", decodedEvent);
           sub.callback(decodedEvent);
         } catch (error) {
           console.error("Failed to decode event:", error);
@@ -151,6 +160,8 @@ export class RiseWebSocketManager extends EventEmitter {
             error: error instanceof Error ? error.message : "Unknown error",
           });
         }
+      } else {
+        console.log("📨 No subscription found or no result:", { hasSubscription: !!sub, hasResult: !!result });
       }
       return;
     }
@@ -207,6 +218,10 @@ export class RiseWebSocketManager extends EventEmitter {
   }
 
   private handleDisconnect() {
+    // Clear active subscriptions
+    this.subscriptions.clear();
+    this.pendingSubscriptions.clear();
+    
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts);
       console.log(`🔄 Reconnecting in ${delay}ms...`);
@@ -357,4 +372,5 @@ export class RiseWebSocketManager extends EventEmitter {
 
     return events;
   }
+
 }
