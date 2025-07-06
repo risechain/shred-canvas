@@ -1,10 +1,10 @@
 import { consola } from "consola";
 
 // Configure consola based on environment
-if (process.env.NEXT_PUBLIC_ENVIRONMENT === "development") {
+if (process.env.NEXT_PUBLIC_NODE_ENV === "development") {
   // In development, show debug level and above
   consola.level = 4; // debug level
-} else if (process.env.NEXT_PUBLIC_ENVIRONMENT === "production") {
+} else if (process.env.NEXT_PUBLIC_NODE_ENV === "production") {
   // In production, only show warnings and errors
   consola.level = 2; // warn level
 } else {
