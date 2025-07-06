@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { TransactionQueue } from "@/providers/PageProvider";
 import { useWebSocket } from "@/providers/WebSocketProvider";
 import { Tooltip } from "@mui/material";
+import { consola } from "@/lib/logger";
 import Image from "next/image";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { HashLoader } from "react-spinners";
@@ -125,14 +126,14 @@ export function DrawingCanvas() {
     let unwatchWiped: (() => void) | undefined;
 
     const setupEventListeners = () => {
-      console.log("Setting up direct blockchain event listeners");
+      consola.debug("Setting up direct blockchain event listeners");
       // Listen for tiles painted events
       unwatchPainted = shredClient.watchShredEvent({
         event: parseAbiItem(
           "event tilesPainted(uint256[] indices, uint8 r, uint8 g, uint8 b)"
         ),
         onLogs: (logs) => {
-          console.log("Direct blockchain tilesPainted event:", logs[0]?.args);
+          consola.info("Direct blockchain tilesPainted event:", logs[0]?.args);
           onBlockchainUpdate(logs[0]?.args);
         },
       });
@@ -143,7 +144,7 @@ export function DrawingCanvas() {
           "event canvasWiped(address indexed wiper, uint256 timestamp)"
         ),
         onLogs: () => {
-          console.log("Direct blockchain canvasWiped event");
+          consola.info("Direct blockchain canvasWiped event");
           // When canvas is wiped, clear the blockchain pixels and refetch tiles
           setBlockchainPixels([]);
           refetchTiles();
@@ -209,14 +210,14 @@ export function DrawingCanvas() {
 
   // Handle WebSocket contract events as backup
   useEffect(() => {
-    console.log("Canvas contractEvents updated, length:", contractEvents.length);
+    consola.debug("Canvas contractEvents updated, length:", contractEvents.length);
     if (!contractEvents.length) return;
 
     const latestEvent = contractEvents[contractEvents.length - 1];
-    console.log("Processing latest event:", latestEvent);
+    consola.debug("Processing latest event:", latestEvent);
 
     if (latestEvent.eventName === "tilesPainted" && latestEvent.args) {
-      console.log("Processing tilesPainted event");
+      consola.info("Processing tilesPainted event");
       const args = latestEvent.args as { indices: bigint[]; r: number; g: number; b: number };
       onBlockchainUpdate({
         indices: Array.isArray(args.indices) ? args.indices : [args.indices],
@@ -225,7 +226,7 @@ export function DrawingCanvas() {
         b: Number(args.b),
       });
     } else if (latestEvent.eventName === "canvasWiped") {
-      console.log("Processing canvasWiped event");
+      consola.info("Processing canvasWiped event");
       setBlockchainPixels([]);
       refetchTiles();
     }
@@ -807,7 +808,7 @@ export function DrawingCanvas() {
 
   // Cleanup batch timer on unmount
   useEffect(() => {
-    console.log("bg:: ", bgCanvas.includes("bg-"));
+    consola.debug("bg:: ", bgCanvas.includes("bg-"));
     return () => {
       if (batchIntervalRef.current) {
         clearTimeout(batchIntervalRef.current);

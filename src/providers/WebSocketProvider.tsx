@@ -8,6 +8,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { consola } from "@/lib/logger";
 import { RiseWebSocketManager } from "@/lib/RiseWebSocketManager";
 import { ContractEvent } from "@/lib/types/contracts";
 
@@ -48,25 +49,25 @@ export function WebSocketProvider({ children }: Readonly<ProviderProps>) {
     manager.on("connected", () => {
       setIsConnected(true);
       setError(null);
-      console.log("WebSocket provider: connected");
+      consola.success("WebSocket provider: connected");
     });
 
     manager.on("disconnected", () => {
       setIsConnected(false);
-      console.log("WebSocket provider: disconnected");
+      consola.warn("WebSocket provider: disconnected");
     });
 
     manager.on("error", (err) => {
       setError(err);
-      console.error("WebSocket provider error:", err);
+      consola.error("WebSocket provider error:", err);
     });
 
     manager.on("subscribed", (subscriptionId) => {
-      console.log("WebSocket provider: subscribed with ID:", subscriptionId);
+      consola.info("WebSocket provider: subscribed with ID:", subscriptionId);
     });
 
     manager.on("contractEvent", (event) => {
-      console.log("Contract event received:", event);
+      consola.info("Contract event received:", event);
       setContractEvents((prev) => {
         // Add timestamp if not present
         const eventWithTimestamp = {
@@ -83,7 +84,7 @@ export function WebSocketProvider({ children }: Readonly<ProviderProps>) {
         );
 
         if (isDuplicate) {
-          console.log(
+          consola.debug(
             "Duplicate event filtered:",
             eventWithTimestamp.transactionHash
           );
@@ -100,11 +101,11 @@ export function WebSocketProvider({ children }: Readonly<ProviderProps>) {
     });
 
     manager.on("reconnected", () => {
-      console.log("WebSocket reconnected - contract events will resume");
+      consola.success("WebSocket reconnected - contract events will resume");
     });
 
     return () => {
-      console.log("WebSocket provider: cleaning up");
+      consola.debug("WebSocket provider: cleaning up");
       if (managerRef.current) {
         managerRef.current.disconnect();
         managerRef.current = null;

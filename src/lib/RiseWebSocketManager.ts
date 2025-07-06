@@ -1,5 +1,6 @@
 import { EventEmitter } from "events";
 import { Interface, id as ethersId } from "ethers";
+import { consola } from "@/lib/logger";
 import canvasAbi from "../../abi/canvasAbi.json";
 import { getNetworkConfig } from "@/hooks/contract/useNetworkConfig";
 
@@ -39,7 +40,7 @@ export class RiseWebSocketManager extends EventEmitter {
 
   constructor(private url: string = RISE_WS_URL) {
     super();
-    console.log("🔧 RiseWebSocketManager initializing with URL:", url);
+    consola.info("🔧 RiseWebSocketManager initializing with URL:", url);
     this.contractInterface = new Interface(canvasAbi);
     this.connect();
   }
@@ -58,7 +59,7 @@ export class RiseWebSocketManager extends EventEmitter {
       this.ws = new WebSocket(this.url);
 
       this.ws.onopen = () => {
-        console.log("🟢 WebSocket connected to RISE");
+        consola.success("🟢 WebSocket connected to RISE");
         const wasReconnecting = this.reconnectAttempts > 0;
         this.isConnecting = false;
         this.reconnectAttempts = 0;
@@ -80,17 +81,17 @@ export class RiseWebSocketManager extends EventEmitter {
       };
 
       this.ws.onclose = (event: CloseEvent) => {
-        console.log("🔴 WebSocket disconnected");
-        console.log("Close code:", event.code);
-        console.log("Close reason:", event.reason || "No reason provided");
-        console.log("Was clean:", event.wasClean);
+        consola.warn("🔴 WebSocket disconnected");
+        consola.debug("Close code:", event.code);
+        consola.debug("Close reason:", event.reason || "No reason provided");
+        consola.debug("Was clean:", event.wasClean);
         this.isConnecting = false;
         this.emit("disconnected", { code: event.code, reason: event.reason });
         this.handleDisconnect();
       };
 
       this.ws.onerror = () => {
-        console.error("❌ WebSocket error occurred");
+        consola.error("❌ WebSocket error occurred");
         this.isConnecting = false;
         // Don't emit error events for connection issues, let onclose handle it
       };
@@ -100,12 +101,12 @@ export class RiseWebSocketManager extends EventEmitter {
           const message = JSON.parse(event.data);
           this.handleMessage(message);
         } catch (error) {
-          console.error("Failed to parse WebSocket message:", error);
+          consola.error("Failed to parse WebSocket message:", error);
         }
       };
     } catch (error) {
-      console.error("Failed to create WebSocket:", error);
-      console.error("WebSocket URL:", this.url);
+      consola.error("Failed to create WebSocket:", error);
+      consola.error("WebSocket URL:", this.url);
       this.isConnecting = false;
       this.handleDisconnect();
     }
@@ -127,7 +128,7 @@ export class RiseWebSocketManager extends EventEmitter {
       const pendingSub = this.pendingSubscriptions.get(message.id);
       if (pendingSub) {
         const subscriptionId = message.result;
-        console.log("✅ Subscription confirmed - ID:", subscriptionId);
+        consola.success("✅ Subscription confirmed - ID:", subscriptionId);
 
         // Move from pending to active subscriptions
         this.pendingSubscriptions.delete(message.id);
@@ -141,18 +142,18 @@ export class RiseWebSocketManager extends EventEmitter {
     // Event notification from subscription
     if (message.method === "rise_subscription" && message.params) {
       const { subscription, result } = message.params;
-      console.log("📨 Received subscription event:", { subscription, result });
+      consola.debug("📨 Received subscription event:", { subscription, result });
       const sub = this.subscriptions.get(subscription);
 
       if (sub && result) {
-        console.log("📨 Processing event with subscription:", subscription);
+        consola.debug("📨 Processing event with subscription:", subscription);
         // Decode the event
         try {
           const decodedEvent = this.decodeEvent(result);
-          console.log("📨 Decoded event:", decodedEvent);
+          consola.info("📨 Decoded event:", decodedEvent);
           sub.callback(decodedEvent);
         } catch (error) {
-          console.error("Failed to decode event:", error);
+          consola.error("Failed to decode event:", error);
           // Still pass the raw event to the callback
           sub.callback({
             ...result,
@@ -161,14 +162,14 @@ export class RiseWebSocketManager extends EventEmitter {
           });
         }
       } else {
-        console.log("📨 No subscription found or no result:", { hasSubscription: !!sub, hasResult: !!result });
+        consola.warn("📨 No subscription found or no result:", { hasSubscription: !!sub, hasResult: !!result });
       }
       return;
     }
 
     // Error response
     if (message.error) {
-      console.error("WebSocket error response:", message.error);
+      consola.error("WebSocket error response:", message.error);
       this.emit("error", message.error);
 
       // Remove pending subscription if it failed
@@ -224,14 +225,14 @@ export class RiseWebSocketManager extends EventEmitter {
     
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts);
-      console.log(`🔄 Reconnecting in ${delay}ms...`);
+      consola.info(`🔄 Reconnecting in ${delay}ms...`);
 
       setTimeout(() => {
         this.reconnectAttempts++;
         this.connect();
       }, delay);
     } else {
-      console.error("❌ Max reconnection attempts reached");
+      consola.error("❌ Max reconnection attempts reached");
       this.emit("maxReconnectAttemptsReached");
     }
   }
@@ -274,7 +275,7 @@ export class RiseWebSocketManager extends EventEmitter {
       params,
     };
 
-    console.log("📤 Sending subscription request:", request);
+    consola.debug("📤 Sending subscription request:", request);
     this.sendMessage(request);
   }
 
