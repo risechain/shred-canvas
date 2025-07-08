@@ -271,7 +271,7 @@ export class RiseWebSocketManager extends EventEmitter {
     const request = {
       jsonrpc: "2.0",
       id: requestId,
-      method: "rise_subscribe",
+      method: "eth_subscribe",
       params,
     };
 
@@ -310,7 +310,7 @@ export class RiseWebSocketManager extends EventEmitter {
     const request = {
       jsonrpc: "2.0",
       id: requestId,
-      method: "rise_subscribe",
+      method: "eth_subscribe",
       params,
     };
 

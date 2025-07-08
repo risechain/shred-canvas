@@ -120,52 +120,8 @@ export function DrawingCanvas() {
     chainId: chain.id,
   });
 
-  // Set up blockchain event listeners
-  useEffect(() => {
-    let unwatchPainted: (() => void) | undefined;
-    let unwatchWiped: (() => void) | undefined;
-
-    const setupEventListeners = () => {
-      consola.debug("Setting up direct blockchain event listeners");
-      // Listen for tiles painted events
-      unwatchPainted = shredClient.watchShredEvent({
-        event: parseAbiItem(
-          "event tilesPainted(uint256[] indices, uint8 r, uint8 g, uint8 b)"
-        ),
-        onLogs: (logs) => {
-          consola.info("Direct blockchain tilesPainted event:", logs[0]?.args);
-          onBlockchainUpdate(logs[0]?.args);
-        },
-      });
-
-      // Listen for canvas wiped events
-      unwatchWiped = shredClient.watchShredEvent({
-        event: parseAbiItem(
-          "event canvasWiped(address indexed wiper, uint256 timestamp)"
-        ),
-        onLogs: () => {
-          consola.info("Direct blockchain canvasWiped event");
-          // When canvas is wiped, clear the blockchain pixels and refetch tiles
-          setBlockchainPixels([]);
-          refetchTiles();
-        },
-      });
-    };
-
-    // Set up initial event listeners
-    setupEventListeners();
-
-    // Cleanup function to stop watching when component unmounts
-    return () => {
-      if (typeof unwatchPainted === "function") {
-        unwatchPainted();
-      }
-      if (typeof unwatchWiped === "function") {
-        unwatchWiped();
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shredClient]); // Re-run when shredClient changes (on reconnections)
+  // Note: Event listening is now handled by the ViemEventManager in WebSocketProvider
+  // This removes the duplicate event handling that was causing issues
 
   // Buffer 2 (Source of Truth) Management
   const onBlockchainUpdate = useCallback((props?: {
@@ -208,7 +164,7 @@ export function DrawingCanvas() {
     removeUserPixels(newPixels);
   }, []);
 
-  // Handle WebSocket contract events as backup
+  // Handle contract events from ViemEventManager
   useEffect(() => {
     consola.debug("Canvas contractEvents updated, length:", contractEvents.length);
     if (!contractEvents.length) return;
@@ -232,19 +188,20 @@ export function DrawingCanvas() {
     }
   }, [contractEvents, onBlockchainUpdate, refetchTiles, setBlockchainPixels]);
 
-  // Handle WebSocket reconnections
+  // Handle event manager reconnections
   useEffect(() => {
     if (!wsManager) return;
 
-    const handleReconnected = () => {
+    const handleConnected = () => {
       // Refetch tiles after reconnection to ensure we have the latest state
+      consola.info("Event manager connected, refetching tiles");
       refetchTiles();
     };
 
-    wsManager.on("reconnected", handleReconnected);
+    wsManager.on("connected", handleConnected);
 
     return () => {
-      wsManager.off("reconnected", handleReconnected);
+      wsManager.off("connected", handleConnected);
     };
   }, [wsManager, refetchTiles]);
 
@@ -294,7 +251,7 @@ export function DrawingCanvas() {
         .sendRawTransactionSync({
           serializedTransaction,
         })
-        .then((_receipt) => {
+        .then((_receipt: unknown) => {
           // Remove confirmed pixels from user overlay (they'll appear via blockchain events)
           removeUserPixels(pixels);
 
@@ -307,7 +264,7 @@ export function DrawingCanvas() {
             return prev + pixelCount;
           });
         })
-        .catch((error) => {
+        .catch((error: unknown) => {
           // Check if it's a nonce-related error
           const errorMessage =
             error instanceof Error

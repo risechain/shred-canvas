@@ -9,17 +9,17 @@ import React, {
   useState,
 } from "react";
 import { consola } from "@/lib/logger";
-import { RiseWebSocketManager } from "@/lib/RiseWebSocketManager";
-import { ContractEvent } from "@/lib/types/contracts";
+import { ViemEventManager, ContractEventData } from "@/lib/ViemEventManager";
+import { useNetworkConfig } from "@/hooks/contract/useNetworkConfig";
 
 interface WebSocketContextType {
-  manager: RiseWebSocketManager | null;
+  manager: ViemEventManager | null;
   isConnected: boolean;
   error: unknown;
-  contractEvents: ContractEvent[];
+  contractEvents: ContractEventData[];
 }
 
-const WebSocketContext = createContext<WebSocketContextType>({
+const EventContext = createContext<WebSocketContextType>({
   manager: null,
   isConnected: false,
   error: null,
@@ -33,66 +33,58 @@ type ProviderProps = {
 export function WebSocketProvider({ children }: Readonly<ProviderProps>) {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<unknown>(null);
-  const [contractEvents, setContractEvents] = useState<ContractEvent[]>([]);
-  const managerRef = useRef<RiseWebSocketManager | null>(null);
+  const [contractEvents, setContractEvents] = useState<ContractEventData[]>([]);
+  const managerRef = useRef<ViemEventManager | null>(null);
   const isInitializedRef = useRef(false);
+  
+  const { chain, contract } = useNetworkConfig();
 
   useEffect(() => {
     // Prevent double initialization in development
     if (isInitializedRef.current) return;
     isInitializedRef.current = true;
 
-    // Create a single WebSocket manager instance
-    const manager = new RiseWebSocketManager();
+    // Create a single Viem event manager instance
+    const manager = new ViemEventManager(chain, contract);
     managerRef.current = manager;
 
     manager.on("connected", () => {
       setIsConnected(true);
       setError(null);
-      consola.success("WebSocket provider: connected");
-    });
-
-    manager.on("disconnected", () => {
-      setIsConnected(false);
-      consola.warn("WebSocket provider: disconnected");
+      consola.success("Viem event provider: connected");
     });
 
     manager.on("error", (err) => {
       setError(err);
-      consola.error("WebSocket provider error:", err);
+      setIsConnected(false);
+      consola.error("Viem event provider error:", err);
     });
 
-    manager.on("subscribed", (subscriptionId) => {
-      consola.info("WebSocket provider: subscribed with ID:", subscriptionId);
+    manager.on("maxReconnectAttemptsReached", () => {
+      setIsConnected(false);
+      consola.error("Viem event provider: max reconnection attempts reached");
     });
 
-    manager.on("contractEvent", (event) => {
+    manager.on("contractEvent", (event: ContractEventData) => {
       consola.info("Contract event received:", event);
       setContractEvents((prev) => {
-        // Add timestamp if not present
-        const eventWithTimestamp = {
-          ...event,
-          timestamp: event.timestamp || new Date(),
-          logIndex: event.logIndex || 0, // Ensure logIndex exists
-        };
-
         // Check for duplicates based on transaction hash and log index
         const isDuplicate = prev.some(
           (e) =>
-            e.transactionHash === eventWithTimestamp.transactionHash &&
-            e.logIndex === eventWithTimestamp.logIndex
+            e.transactionHash === event.transactionHash &&
+            e.logIndex === event.logIndex
         );
 
         if (isDuplicate) {
           consola.debug(
             "Duplicate event filtered:",
-            eventWithTimestamp.transactionHash
+            event.transactionHash
           );
           return prev;
         }
 
         // Limit array size to prevent memory issues
-        const newEvents = [...prev, eventWithTimestamp];
+        const newEvents = [...prev, event];
         if (newEvents.length > 500) {
           return newEvents.slice(-400); // Keep last 400 events
         }
@@ -100,19 +92,15 @@ export function WebSocketProvider({ children }: Readonly<ProviderProps>) {
       });
     });
 
-    manager.on("reconnected", () => {
-      consola.success("WebSocket reconnected - contract events will resume");
-    });
-
     return () => {
-      consola.debug("WebSocket provider: cleaning up");
+      consola.debug("Viem event provider: cleaning up");
       if (managerRef.current) {
         managerRef.current.disconnect();
         managerRef.current = null;
       }
       isInitializedRef.current = false;
     };
-  }, []);
+  }, [chain, contract]);
 
   const providerValue = useMemo(() => {
     return {
@@ -124,14 +112,14 @@ export function WebSocketProvider({ children }: Readonly<ProviderProps>) {
   }, [contractEvents, error, isConnected]);
 
   return (
-    <WebSocketContext.Provider value={providerValue}>
+    <EventContext.Provider value={providerValue}>
       {children}
-    </WebSocketContext.Provider>
+    </EventContext.Provider>
   );
 }
 
 export function useWebSocket() {
-  const context = useContext(WebSocketContext);
+  const context = useContext(EventContext);
   if (!context) {
     throw new Error("useWebSocket must be used within a WebSocketProvider");
   }

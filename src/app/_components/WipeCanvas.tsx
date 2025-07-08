@@ -83,7 +83,7 @@ export function WipeCanvas() {
 
   // Listen for canvas wipe events
   useEffect(() => {
-    const unwatch = shredClient.watchShredEvent({
+    const unwatch = shredClient.watchEvent({
       event: parseAbiItem(
         "event canvasWiped(address indexed wiper, uint256 timestamp)"
       ),

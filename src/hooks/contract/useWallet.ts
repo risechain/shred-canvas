@@ -1,10 +1,9 @@
 import { useMemo, useState } from "react";
 import {
   createPublicShredClient,
-  createPublicSyncClient,
-  shredsWebSocket,
+  shredActions,
 } from "shreds/viem";
-import { Account, createPublicClient, createWalletClient, http } from "viem";
+import { Account, createPublicClient, createWalletClient, http, webSocket } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { useNetworkConfig } from "./useNetworkConfig";
 
@@ -70,18 +69,17 @@ export function useWallet() {
     () =>
       createPublicShredClient({
         chain,
-        transport: shredsWebSocket(wss), // Replace with your Shreds WebSocket endpoint
+        transport: webSocket(wss),
       }),
     [chain, wss]
   );
 
   const syncClient = useMemo(
     () =>
-      createPublicSyncClient({
+      createPublicClient({
         chain,
-        // @ts-expect-error Shreds SDK type incompatibility with standard transport
         transport: http(_http),
-      }),
+      }).extend(shredActions),
     [chain, _http]
   );
 
