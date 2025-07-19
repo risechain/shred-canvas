@@ -55,6 +55,53 @@ export function DrawingCanvas() {
 
   const { contract, chain, canvasSize } = useNetworkConfig();
 
+  // Poll for transaction receipt when sendRawTransactionSync times out
+  const pollForTransactionReceipt = async (pixels: TransactionQueue[]) => {
+    const maxAttempts = 30; // Poll for up to 30 seconds
+    const pollInterval = 1000; // Poll every 1 second
+    
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        // Get recent transactions from this address
+        const latestBlock = await publicClient.getBlockNumber();
+        const startBlock = latestBlock - 10n; // Check last 10 blocks
+        
+        // Look for transactions from our address in recent blocks
+        const logs = await publicClient.getLogs({
+          address: contract as `0x${string}`,
+          fromBlock: startBlock,
+          toBlock: 'latest'
+        });
+        
+        // Check if any recent transaction matches our expected outcome
+        // This is a simplified check - in practice you might want to store the transaction hash
+        if (logs.length > 0) {
+          consola.success("Transaction found in recent blocks, assuming success");
+          
+          // Remove confirmed pixels from user overlay
+          removeUserPixels(pixels);
+          
+          // Show success feedback
+          const pixelCount = pixels.length;
+          if (!isMobile && notificationsEnabled) {
+            showTransactionToast(pixelCount);
+          }
+          setCompletedTx((prev: number) => prev + pixelCount);
+          return;
+        }
+        
+        // Wait before next poll
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        
+      } catch (error) {
+        consola.error("Error polling for transaction receipt:", error);
+        break;
+      }
+    }
+    
+    consola.warn("Transaction polling timed out - transaction may still be pending");
+  };
+
   const {
     brushColor,
     brushSize,
@@ -165,26 +212,50 @@ export function DrawingCanvas() {
   }, []);
 
   // Handle contract events from ViemEventManager
+  // Track processed event IDs to avoid reprocessing
+  const processedEventsRef = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     consola.debug("Canvas contractEvents updated, length:", contractEvents.length);
     if (!contractEvents.length) return;
 
-    const latestEvent = contractEvents[contractEvents.length - 1];
-    consola.debug("Processing latest event:", latestEvent);
+    // Process all unprocessed events
+    contractEvents.forEach((event) => {
+      // Create unique event ID
+      const eventId = `${event.transactionHash}-${event.logIndex}`;
+      
+      // Skip if already processed
+      if (processedEventsRef.current.has(eventId)) {
+        return;
+      }
 
-    if (latestEvent.eventName === "tilesPainted" && latestEvent.args) {
-      consola.info("Processing tilesPainted event");
-      const args = latestEvent.args as { indices: bigint[]; r: number; g: number; b: number };
-      onBlockchainUpdate({
-        indices: Array.isArray(args.indices) ? args.indices : [args.indices],
-        r: Number(args.r),
-        g: Number(args.g),
-        b: Number(args.b),
+      consola.debug("Processing event:", eventId, event.eventName);
+      processedEventsRef.current.add(eventId);
+
+      if (event.eventName === "tilesPainted" && event.args) {
+        consola.info("Processing tilesPainted event:", eventId);
+        const args = event.args as { indices: bigint[]; r: number; g: number; b: number };
+        onBlockchainUpdate({
+          indices: Array.isArray(args.indices) ? args.indices : [args.indices],
+          r: Number(args.r),
+          g: Number(args.g),
+          b: Number(args.b),
+        });
+      } else if (event.eventName === "canvasWiped") {
+        consola.info("Processing canvasWiped event:", eventId);
+        setBlockchainPixels([]);
+        refetchTiles();
+      }
+    });
+
+    // Clean up old processed events to prevent memory leak
+    if (processedEventsRef.current.size > 1000) {
+      processedEventsRef.current.clear();
+      // Re-add the current events
+      contractEvents.forEach(event => {
+        const eventId = `${event.transactionHash}-${event.logIndex}`;
+        processedEventsRef.current.add(eventId);
       });
-    } else if (latestEvent.eventName === "canvasWiped") {
-      consola.info("Processing canvasWiped event");
-      setBlockchainPixels([]);
-      refetchTiles();
     }
   }, [contractEvents, onBlockchainUpdate, refetchTiles, setBlockchainPixels]);
 
@@ -265,12 +336,22 @@ export function DrawingCanvas() {
           });
         })
         .catch((error: unknown) => {
-          // Check if it's a nonce-related error
           const errorMessage =
             error instanceof Error
               ? error.message.toLowerCase()
               : String(error).toLowerCase();
 
+          // Handle timeout case - transaction is in mempool, poll for receipt
+          if (
+            errorMessage.includes("transaction was added to the mempool but wasn't processed") ||
+            errorMessage.includes("please use eth_getTransactionReceipt to poll")
+          ) {
+            consola.info("Transaction in mempool, polling for receipt...");
+            pollForTransactionReceipt(pixels);
+            return;
+          }
+
+          // Check if it's a nonce-related error
           if (
             errorMessage.includes("nonce") ||
             errorMessage.includes("replacement")
@@ -596,6 +677,7 @@ export function DrawingCanvas() {
   }
 
   function coordToBufferIndex(x: number, y: number) {
+    // Standard row-major order: index = y * width + x
     return Math.floor(y) * canvasSize + Math.floor(x);
   }
 

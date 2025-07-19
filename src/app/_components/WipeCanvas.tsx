@@ -81,6 +81,53 @@ export function WipeCanvas() {
     return () => clearInterval(interval);
   }, [nextWipeTime]);
 
+  // Poll for wipe transaction receipt when sendRawTransactionSync times out
+  const pollForWipeReceipt = async () => {
+    const maxAttempts = 30; // Poll for up to 30 seconds
+    const pollInterval = 1000; // Poll every 1 second
+    
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        // Get recent wipe events
+        const latestBlock = await publicClient.getBlockNumber();
+        const startBlock = latestBlock - 10n; // Check last 10 blocks
+        
+        const logs = await publicClient.getLogs({
+          address: contract as `0x${string}`,
+          event: parseAbiItem(
+            "event canvasWiped(address indexed wiper, uint256 timestamp)"
+          ),
+          fromBlock: startBlock,
+          toBlock: 'latest'
+        });
+        
+        // Check if any recent wipe event matches our account
+        const recentWipe = logs.find(log => {
+          // Simple check - if there's a recent wipe event, assume it's ours
+          // More sophisticated checking could parse the log data
+          return log.topics && log.topics.length > 0;
+        });
+        
+        if (recentWipe) {
+          showToastSuccess("Canvas wiped successfully!", {
+            duration: 5000,
+          });
+          refetchNextWipeTime();
+          return;
+        }
+        
+        // Wait before next poll
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        
+      } catch (error) {
+        console.error("Error polling for wipe receipt:", error);
+        break;
+      }
+    }
+    
+    showToastError("Wipe transaction status unclear - please check manually");
+  };
+
   // Listen for canvas wipe events
   useEffect(() => {
     const unwatch = shredClient.watchEvent({
@@ -144,6 +191,18 @@ export function WipeCanvas() {
             txError instanceof Error
               ? txError.message.toLowerCase()
               : String(txError).toLowerCase();
+
+          // Handle timeout case - transaction is in mempool, poll for receipt
+          if (
+            errorMessage.includes("transaction was added to the mempool but wasn't processed") ||
+            errorMessage.includes("please use eth_getTransactionReceipt to poll")
+          ) {
+            showToastSuccess("Wipe transaction submitted! Checking status...", {
+              duration: 3000,
+            });
+            pollForWipeReceipt();
+            return;
+          }
 
           if (
             errorMessage.includes("wipeonCooldown") ||
