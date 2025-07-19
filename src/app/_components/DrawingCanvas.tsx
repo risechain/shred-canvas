@@ -25,7 +25,7 @@ type PixelWithTimestamp = TransactionQueue & {
   opacity: number;
 };
 
-const USER_PIXEL_FADE_DURATION = 3000; // 3 seconds
+const USER_PIXEL_FADE_DURATION = 5000; // 5 seconds
 
 export function DrawingCanvas() {
   // Canvas refs for double buffering
