@@ -47,6 +47,9 @@ export function DrawingCanvas() {
   const [toolTip, setToolTip] =
     useState<Partial<TransactionQueue | null>>(null);
 
+  // Track the last drawing position for smooth line interpolation
+  const lastDrawPositionRef = useRef<{ x: number; y: number } | null>(null);
+
   // Concurrent transaction system
   const batchIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const currentBatchRef = useRef<TransactionQueue[]>([]);
@@ -456,6 +459,41 @@ export function DrawingCanvas() {
     return { x, y };
   }
 
+  // Bresenham's line algorithm to get all pixels between two points
+  function getLinePixels(x0: number, y0: number, x1: number, y1: number): Array<{x: number, y: number}> {
+    const pixels: Array<{x: number, y: number}> = [];
+    
+    const dx = Math.abs(x1 - x0);
+    const dy = Math.abs(y1 - y0);
+    const sx = x0 < x1 ? 1 : -1;
+    const sy = y0 < y1 ? 1 : -1;
+    let err = dx - dy;
+
+    let currentX = x0;
+    let currentY = y0;
+
+    while (true) {
+      // Ensure pixels are within canvas bounds
+      if (currentX >= 0 && currentX < canvasSize && currentY >= 0 && currentY < canvasSize) {
+        pixels.push({ x: currentX, y: currentY });
+      }
+
+      if (currentX === x1 && currentY === y1) break;
+
+      const e2 = 2 * err;
+      if (e2 > -dy) {
+        err -= dy;
+        currentX += sx;
+      }
+      if (e2 < dx) {
+        err += dx;
+        currentY += sy;
+      }
+    }
+
+    return pixels;
+  }
+
   function getCoordinates(canvas: HTMLCanvasElement, nativeEvent: MouseEvent) {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
@@ -541,6 +579,9 @@ export function DrawingCanvas() {
     // Add to batch for processing
     addPixelToBatch(pixel);
 
+    // Reset last draw position for new stroke
+    lastDrawPositionRef.current = { x, y };
+
     setIsDrawing(true);
   }
 
@@ -548,6 +589,9 @@ export function DrawingCanvas() {
     if (!contextRef.current) return;
     contextRef.current.closePath();
     setIsDrawing(false);
+
+    // Clear last draw position
+    lastDrawPositionRef.current = null;
 
     // Clear the batch timer and immediately flush current batch
     if (batchIntervalRef.current) {
@@ -585,24 +629,40 @@ export function DrawingCanvas() {
 
     if (!isDrawing || currentTool !== "brush") return;
 
-    // Do not remove this -- this will prevent from adding duplicating coordinates in txQueue
-    if (lastTx.x === x && lastTx.y === y) return;
+    // Get all pixels between last position and current position
+    if (lastDrawPositionRef.current) {
+      const linePixels = getLinePixels(
+        lastDrawPositionRef.current.x,
+        lastDrawPositionRef.current.y,
+        x,
+        y
+      );
 
-    const pixel = {
-      x,
-      y,
-      r: rgbValues.r,
-      g: rgbValues.g,
-      b: rgbValues.b,
-    };
+      // Process each pixel in the line
+      linePixels.forEach((pos) => {
+        // Skip if we already processed this pixel
+        if (lastTx.x === pos.x && lastTx.y === pos.y) return;
 
-    setLastTx(pixel);
+        const pixel = {
+          x: pos.x,
+          y: pos.y,
+          r: rgbValues.r,
+          g: rgbValues.g,
+          b: rgbValues.b,
+        };
 
-    // Add to user overlay (Buffer 1)
-    addUserPixel(pixel);
+        setLastTx(pixel);
 
-    // Add to batch for processing
-    addPixelToBatch(pixel);
+        // Add to user overlay (Buffer 1)
+        addUserPixel(pixel);
+
+        // Add to batch for processing
+        addPixelToBatch(pixel);
+      });
+    }
+
+    // Update last draw position
+    lastDrawPositionRef.current = { x, y };
   }
 
   // TODO: merge this widh touchStart and touchMove
@@ -638,6 +698,9 @@ export function DrawingCanvas() {
       b: rgbValues.b,
     };
 
+    // Reset last draw position for new stroke
+    lastDrawPositionRef.current = { x, y };
+
     // Add to user overlay (Buffer 1)
     addUserPixel(pixel);
 
@@ -661,19 +724,35 @@ export function DrawingCanvas() {
     const x = Math.floor((touch.clientX - rect.left) * scaleX);
     const y = Math.floor((touch.clientY - rect.top) * scaleY);
 
-    const pixel = {
-      x,
-      y,
-      r: rgbValues.r,
-      g: rgbValues.g,
-      b: rgbValues.b,
-    };
+    // Get all pixels between last position and current position
+    if (lastDrawPositionRef.current) {
+      const linePixels = getLinePixels(
+        lastDrawPositionRef.current.x,
+        lastDrawPositionRef.current.y,
+        x,
+        y
+      );
 
-    // Add to user overlay (Buffer 1)
-    addUserPixel(pixel);
+      // Process each pixel in the line
+      linePixels.forEach((pos) => {
+        const pixel = {
+          x: pos.x,
+          y: pos.y,
+          r: rgbValues.r,
+          g: rgbValues.g,
+          b: rgbValues.b,
+        };
 
-    // Add to batch for processing
-    addPixelToBatch(pixel);
+        // Add to user overlay (Buffer 1)
+        addUserPixel(pixel);
+
+        // Add to batch for processing
+        addPixelToBatch(pixel);
+      });
+    }
+
+    // Update last draw position
+    lastDrawPositionRef.current = { x, y };
   }
 
   function coordToBufferIndex(x: number, y: number) {
