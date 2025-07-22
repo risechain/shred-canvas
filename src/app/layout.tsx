@@ -32,6 +32,20 @@ export const metadata: Metadata = {
   title: "RISE Shred Canvas",
   description:
     "Discover the power of the Shred API — a client made specifically to interact with Shreds on the RISE Chain!",
+  openGraph: {
+    title: "RISE Shred Canvas",
+    description:
+      "Discover the power of the Shred API — a client made specifically to interact with Shreds on the RISE Chain!",
+    images: ["/open-graph-canvas.png"],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "RISE Shred Canvas",
+    description:
+      "Discover the power of the Shred API — a client made specifically to interact with Shreds on the RISE Chain!",
+    images: ["/open-graph-canvas.png"],
+  },
   icons: {
     icon: [
       { url: "/favicon_light.svg", media: "(prefers-color-scheme: light)" },
