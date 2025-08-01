@@ -56,7 +56,7 @@ export function FundWallet() {
         </Button>
         <Button asChild className="w-fit self-center">
           <Link
-            href="https://faucet.testnet.riselabs.xyz/"
+            href="https://portal.risechain.com/"
             target="_blank"
             onClick={onClose}
           >

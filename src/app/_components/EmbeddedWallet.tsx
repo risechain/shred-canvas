@@ -211,7 +211,7 @@ export function EmbeddedWalletContent() {
           Reset Wallet
         </Button>
         <Button asChild className="flex-1">
-          <Link href="https://faucet.testnet.riselabs.xyz/" target="_blank">
+          <Link href="https://portal.risechain.com/" target="_blank">
             Request Token
           </Link>
         </Button>
