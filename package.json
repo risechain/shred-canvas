@@ -11,6 +11,7 @@
     "draw-image": "tsx scripts/draw-image.ts"
   },
   "dependencies": {
+    "@apollo/client": "^3.13.9",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@fontsource/inter": "^5.2.5",
@@ -44,6 +45,7 @@
     "decimal.js": "^10.5.0",
     "dotenv": "^16.4.5",
     "ethers": "^6.11.1",
+    "graphql": "^16.11.0",
     "json5": "^2.2.3",
     "lodash": "^4.17.21",
     "lucide-react": "^0.485.0",

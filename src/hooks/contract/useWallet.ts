@@ -57,8 +57,9 @@ export function useWallet() {
     }
 
     const storedWallet = getStoredWallet();
-    if (storedWallet) {
-      return generateWalletClient(storedWallet.address as `0x${string}`);
+    if (storedWallet && storedWallet.privateKey) {
+      const account = privateKeyToAccount(storedWallet.privateKey);
+      return generateWalletClient(account);
     } else {
       return resetWalletClient();
     }

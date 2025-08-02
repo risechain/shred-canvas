@@ -340,13 +340,6 @@ export function BrushSettings() {
               );
             })}
           </div>
-          <Button
-            variant="ghost"
-            className="p-1"
-            onClick={() => handleSetBgCanvas("")}
-          >
-            Reset
-          </Button>
         </div>
       </div>
       <Separator />
