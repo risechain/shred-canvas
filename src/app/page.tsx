@@ -10,7 +10,6 @@ import {
 import { BrushSettings } from "./_components/BrushSettings";
 import { DrawingCanvas } from "./_components/DrawingCanvas";
 import { EmbeddedWalletContent } from "./_components/EmbeddedWallet";
-import { WipeCanvas } from "./_components/WipeCanvas";
 import { usePage } from "@/hooks/usePage";
 
 export function EmbeddedWallet() {
@@ -41,7 +40,7 @@ export function Settings() {
       maxSize={25}
     >
       <BrushSettings />
-      <WipeCanvas />
+      {/* <WipeCanvas /> */}
     </ResizablePanel>
   );
 }

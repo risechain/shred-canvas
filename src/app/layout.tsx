@@ -1,6 +1,7 @@
 import { DynamicFavicon } from "@/components/DynamicFavicon";
 import { Modal } from "@/components/Modal";
 import { AppProvider } from "@/providers";
+import { ChatBox } from "@/app/_layout/Chatbox";
 
 import clsx from "clsx";
 import type { Metadata } from "next";
@@ -67,6 +68,7 @@ export default function RootLayout({
         <AppProvider>
           <DynamicFavicon />
           <Modal />
+          <ChatBox />
           <main className="mx-auto max-w-10xl w-full h-auto relative min-h-vh">
             <div className="bg-background p-3 rounded-md1 h-full rounded-md">
               <NavigationBar />
