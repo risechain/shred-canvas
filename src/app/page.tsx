@@ -1,5 +1,6 @@
 "use client";
 
+import { GoogleAnalytics } from "@next/third-parties/google";
 import { Separator } from "@/components/ui";
 import {
   ResizableHandle,
@@ -64,6 +65,7 @@ export default function Home() {
         ...getCanvasBg(),
       }}
     >
+      <GoogleAnalytics gaId="G-2BHBDB6M93" />
       <EmbeddedWallet />
       <ResizableHandle
         withHandle
