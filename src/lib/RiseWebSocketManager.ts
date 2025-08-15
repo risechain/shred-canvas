@@ -21,7 +21,7 @@ export interface LogEvent {
   blockHash: string | null;
 }
 
-const ENVIRONMENT = process.env.NEXT_PUBLIC_ENVIRONMENT || "production";
+const ENVIRONMENT = process.env.ENVIRONMENT || "production";
 
 const { wss: RISE_WS_URL, contract: CANVAS_ADDRESS } =
   getNetworkConfig(ENVIRONMENT);
@@ -73,7 +73,7 @@ export class RiseWebSocketManager extends EventEmitter {
 
         // Subscribe to Canvas contract by default
         this.subscribeToContract(CANVAS_ADDRESS);
-        
+
         // Emit reconnection event for components to re-establish their listeners
         if (wasReconnecting) {
           this.emit("reconnected");
@@ -142,7 +142,10 @@ export class RiseWebSocketManager extends EventEmitter {
     // Event notification from subscription
     if (message.method === "rise_subscription" && message.params) {
       const { subscription, result } = message.params;
-      consola.debug("📨 Received subscription event:", { subscription, result });
+      consola.debug("📨 Received subscription event:", {
+        subscription,
+        result,
+      });
       const sub = this.subscriptions.get(subscription);
 
       if (sub && result) {
@@ -162,7 +165,10 @@ export class RiseWebSocketManager extends EventEmitter {
           });
         }
       } else {
-        consola.warn("📨 No subscription found or no result:", { hasSubscription: !!sub, hasResult: !!result });
+        consola.warn("📨 No subscription found or no result:", {
+          hasSubscription: !!sub,
+          hasResult: !!result,
+        });
       }
       return;
     }
@@ -222,7 +228,7 @@ export class RiseWebSocketManager extends EventEmitter {
     // Clear active subscriptions
     this.subscriptions.clear();
     this.pendingSubscriptions.clear();
-    
+
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts);
       consola.info(`🔄 Reconnecting in ${delay}ms...`);
@@ -373,5 +379,4 @@ export class RiseWebSocketManager extends EventEmitter {
 
     return events;
   }
-
 }

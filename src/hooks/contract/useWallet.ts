@@ -1,9 +1,12 @@
 import { useMemo, useState } from "react";
+import { createPublicShredClient, shredActions } from "shreds/viem";
 import {
-  createPublicShredClient,
-  shredActions,
-} from "shreds/viem";
-import { Account, createPublicClient, createWalletClient, http, webSocket } from "viem";
+  Account,
+  createPublicClient,
+  createWalletClient,
+  http,
+  webSocket,
+} from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { useNetworkConfig } from "./useNetworkConfig";
 
@@ -11,7 +14,7 @@ const WALLET_STORAGE_KEY = "paint_canvas_wallet";
 
 export function useWallet() {
   const [isResetting, setIsResetting] = useState<boolean>(false);
-  const { chain, wss, http: _http } = useNetworkConfig();
+  const { chain, wss } = useNetworkConfig();
 
   function getStoredWallet() {
     if (typeof window !== "undefined") {
@@ -79,18 +82,18 @@ export function useWallet() {
     () =>
       createPublicClient({
         chain,
-        transport: http(_http),
+        transport: http("/api/rpc-proxy"),
       }).extend(shredActions),
-    [chain, _http]
+    [chain]
   );
 
   const publicClient = useMemo(
     () =>
       createPublicClient({
         chain,
-        transport: http(_http),
+        transport: http("/api/rpc-proxy"),
       }),
-    [chain, _http]
+    [chain]
   );
 
   // Get the account from stored wallet
