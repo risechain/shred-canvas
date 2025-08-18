@@ -1,5 +1,12 @@
 import { EventEmitter } from "events";
-import { PublicClient, parseAbiItem, Log, createPublicClient, webSocket, Chain } from "viem";
+import {
+  PublicClient,
+  parseAbiItem,
+  Log,
+  createPublicClient,
+  webSocket,
+  Chain,
+} from "viem";
 import { consola } from "@/lib/logger";
 import { getNetworkConfig } from "@/hooks/contract/useNetworkConfig";
 
@@ -26,28 +33,28 @@ export class ViemEventManager extends EventEmitter {
   private reconnectDelay = 1000;
   private wsClient: PublicClient;
 
-  constructor(
-    private chain: Chain,
-    private contractAddress: string
-  ) {
+  constructor(private chain: Chain, private contractAddress: string) {
     super();
-    consola.info("🔧 ViemEventManager initializing for contract:", contractAddress);
-    
-    const environment = process.env.NEXT_PUBLIC_ENVIRONMENT || "production";
+    consola.info(
+      "🔧 ViemEventManager initializing for contract:",
+      contractAddress
+    );
+
+    const environment = process.env.ENVIRONMENT || "production";
     const { wss } = getNetworkConfig(environment);
-    
+
     // Create WebSocket client for event watching
     this.wsClient = createPublicClient({
       chain,
       transport: webSocket(wss),
     });
-    
+
     this.startWatching();
   }
 
   private async startWatching() {
     if (this.isWatching) return;
-    
+
     try {
       this.isWatching = true;
       consola.debug("🔍 Starting viem event watchers");
@@ -55,35 +62,38 @@ export class ViemEventManager extends EventEmitter {
       // Watch for tilesPainted events
       const unwatchTilesPainted = this.wsClient.watchEvent({
         address: this.contractAddress as `0x${string}`,
-        event: parseAbiItem("event tilesPainted(uint256[] indices, uint8 r, uint8 g, uint8 b)"),
+        event: parseAbiItem(
+          "event tilesPainted(uint256[] indices, uint8 r, uint8 g, uint8 b)"
+        ),
         onLogs: (logs) => {
-          logs.forEach(log => this.handleLog(log, "tilesPainted"));
+          logs.forEach((log) => this.handleLog(log, "tilesPainted"));
         },
         onError: (error) => {
           consola.error("Error watching tilesPainted events:", error);
           this.handleWatchError();
-        }
+        },
       });
 
       // Watch for canvasWiped events
       const unwatchCanvasWiped = this.wsClient.watchEvent({
         address: this.contractAddress as `0x${string}`,
-        event: parseAbiItem("event canvasWiped(address indexed wiper, uint256 timestamp)"),
+        event: parseAbiItem(
+          "event canvasWiped(address indexed wiper, uint256 timestamp)"
+        ),
         onLogs: (logs) => {
-          logs.forEach(log => this.handleLog(log, "canvasWiped"));
+          logs.forEach((log) => this.handleLog(log, "canvasWiped"));
         },
         onError: (error) => {
           consola.error("Error watching canvasWiped events:", error);
           this.handleWatchError();
-        }
+        },
       });
 
       this.unwatchFunctions = [unwatchTilesPainted, unwatchCanvasWiped];
       this.reconnectAttempts = 0;
-      
+
       consola.success("✅ Viem event watchers started successfully");
       this.emit("connected");
-
     } catch (error) {
       consola.error("Failed to start viem event watchers:", error);
       this.handleWatchError();
@@ -110,10 +120,9 @@ export class ViemEventManager extends EventEmitter {
 
       consola.info("📨 Emitting contract event:", eventData);
       this.emit("contractEvent", eventData);
-
     } catch (error) {
       consola.error("Failed to process viem event log:", error);
-      
+
       // Still emit the raw event data
       const rawEventData: ContractEventData = {
         address: log.address,
@@ -127,7 +136,7 @@ export class ViemEventManager extends EventEmitter {
         logIndex: log.logIndex || 0,
         timestamp: new Date(),
       };
-      
+
       this.emit("contractEvent", rawEventData);
     }
   }
@@ -135,11 +144,11 @@ export class ViemEventManager extends EventEmitter {
   private handleWatchError() {
     this.isWatching = false;
     this.stopWatching();
-    
+
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts);
       consola.info(`🔄 Reconnecting viem watchers in ${delay}ms...`);
-      
+
       setTimeout(() => {
         this.reconnectAttempts++;
         this.startWatching();
@@ -151,7 +160,7 @@ export class ViemEventManager extends EventEmitter {
   }
 
   private stopWatching() {
-    this.unwatchFunctions.forEach(unwatch => {
+    this.unwatchFunctions.forEach((unwatch) => {
       try {
         unwatch();
       } catch (error) {

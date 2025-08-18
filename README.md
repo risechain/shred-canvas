@@ -11,15 +11,18 @@ cp .env.example .env.local
 The following environment variables are available:
 
 ### General Configuration
-- `NEXT_PUBLIC_ENVIRONMENT` - Environment mode (`production`, `staging`, `local`, `test`)
+
+- `ENVIRONMENT` - Environment mode (`production`, `staging`, `local`, `test`)
 
 ### Production Environment
+
 - `NEXT_PUBLIC_CONTRACT_ADDRESS` - Canvas contract address
 - `NEXT_PUBLIC_RPC_URL` - RPC endpoint URL
 - `NEXT_PUBLIC_RPC_URL_WSS` - WebSocket RPC URL
 - `NEXT_PUBLIC_CANVAS_SIZE` - Canvas size (64x64)
 
-### Staging Environment  
+### Staging Environment
+
 - `NEXT_PUBLIC_CONTRACT_ADDRESS_STAGING` - Staging contract address
 - `NEXT_PUBLIC_RPC_URL_STAGING` - Staging RPC endpoint URL
 - `NEXT_PUBLIC_RPC_URL_WSS_STAGING` - Staging WebSocket RPC URL
@@ -60,6 +63,7 @@ npm run draw-image scripts/test.jpg
 ```
 
 The script automatically:
+
 - Resizes images to 64x64 pixels
 - Converts them to the canvas format
 - Uploads them using efficient batch transactions

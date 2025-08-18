@@ -11,7 +11,13 @@ import { useWebSocket } from "@/providers/WebSocketProvider";
 import { Tooltip } from "@mui/material";
 import { consola } from "@/lib/logger";
 import Image from "next/image";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { HashLoader } from "react-spinners";
 import { encodeFunctionData, parseAbiItem } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -62,28 +68,30 @@ export function DrawingCanvas() {
   const pollForTransactionReceipt = async (pixels: TransactionQueue[]) => {
     const maxAttempts = 30; // Poll for up to 30 seconds
     const pollInterval = 1000; // Poll every 1 second
-    
+
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
         // Get recent transactions from this address
         const latestBlock = await publicClient.getBlockNumber();
         const startBlock = latestBlock - 10n; // Check last 10 blocks
-        
+
         // Look for transactions from our address in recent blocks
         const logs = await publicClient.getLogs({
           address: contract as `0x${string}`,
           fromBlock: startBlock,
-          toBlock: 'latest'
+          toBlock: "latest",
         });
-        
+
         // Check if any recent transaction matches our expected outcome
         // This is a simplified check - in practice you might want to store the transaction hash
         if (logs.length > 0) {
-          consola.success("Transaction found in recent blocks, assuming success");
-          
+          consola.success(
+            "Transaction found in recent blocks, assuming success"
+          );
+
           // Remove confirmed pixels from user overlay
           removeUserPixels(pixels);
-          
+
           // Show success feedback
           const pixelCount = pixels.length;
           if (!isMobile && notificationsEnabled) {
@@ -92,17 +100,18 @@ export function DrawingCanvas() {
           setCompletedTx((prev: number) => prev + pixelCount);
           return;
         }
-        
+
         // Wait before next poll
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
-        
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
       } catch (error) {
         consola.error("Error polling for transaction receipt:", error);
         break;
       }
     }
-    
-    consola.warn("Transaction polling timed out - transaction may still be pending");
+
+    consola.warn(
+      "Transaction polling timed out - transaction may still be pending"
+    );
   };
 
   const {
@@ -132,7 +141,7 @@ export function DrawingCanvas() {
   } = useWallet();
 
   const isMobile = useIsMobile();
-  
+
   // WebSocket connection status
   const { manager: wsManager, contractEvents } = useWebSocket();
 
@@ -174,59 +183,65 @@ export function DrawingCanvas() {
   // This removes the duplicate event handling that was causing issues
 
   // Buffer 2 (Source of Truth) Management
-  const onBlockchainUpdate = useCallback((props?: {
-    indices?: readonly bigint[];
-    r?: number;
-    g?: number;
-    b?: number;
-  }) => {
-    if (!props?.indices) return;
+  const onBlockchainUpdate = useCallback(
+    (props?: {
+      indices?: readonly bigint[];
+      r?: number;
+      g?: number;
+      b?: number;
+    }) => {
+      if (!props?.indices) return;
 
-    const newPixels = props.indices.map((index) => {
-      const coordinate = getCoordinatesFromIndex(Number(index));
-      return {
-        x: Number(coordinate?.x ?? 0),
-        y: Number(coordinate?.y ?? 0),
-        r: Number(props.r ?? 0),
-        g: Number(props.g ?? 0),
-        b: Number(props.b ?? 0),
-      };
-    });
-
-    // Immediately update Buffer 2 (source of truth)
-    setBlockchainPixels((prev) => {
-      const updated = [...prev];
-      newPixels.forEach((newPixel) => {
-        // Remove any existing pixel at the same coordinate and add new one
-        const index = updated.findIndex(
-          (p) => p.x === newPixel.x && p.y === newPixel.y
-        );
-        if (index >= 0) {
-          updated[index] = newPixel;
-        } else {
-          updated.push(newPixel);
-        }
+      const newPixels = props.indices.map((index) => {
+        const coordinate = getCoordinatesFromIndex(Number(index));
+        return {
+          x: Number(coordinate?.x ?? 0),
+          y: Number(coordinate?.y ?? 0),
+          r: Number(props.r ?? 0),
+          g: Number(props.g ?? 0),
+          b: Number(props.b ?? 0),
+        };
       });
-      return updated;
-    });
 
-    // Remove corresponding pixels from user overlay (they're now confirmed)
-    removeUserPixels(newPixels);
-  }, []);
+      // Immediately update Buffer 2 (source of truth)
+      setBlockchainPixels((prev) => {
+        const updated = [...prev];
+        newPixels.forEach((newPixel) => {
+          // Remove any existing pixel at the same coordinate and add new one
+          const index = updated.findIndex(
+            (p) => p.x === newPixel.x && p.y === newPixel.y
+          );
+          if (index >= 0) {
+            updated[index] = newPixel;
+          } else {
+            updated.push(newPixel);
+          }
+        });
+        return updated;
+      });
+
+      // Remove corresponding pixels from user overlay (they're now confirmed)
+      removeUserPixels(newPixels);
+    },
+    []
+  );
 
   // Handle contract events from ViemEventManager
   // Track processed event IDs to avoid reprocessing
   const processedEventsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    consola.debug("Canvas contractEvents updated, length:", contractEvents.length);
+    consola.debug(
+      "Canvas contractEvents updated, length:",
+      contractEvents.length
+    );
     if (!contractEvents.length) return;
 
     // Process all unprocessed events
     contractEvents.forEach((event) => {
       // Create unique event ID
       const eventId = `${event.transactionHash}-${event.logIndex}`;
-      
+
       // Skip if already processed
       if (processedEventsRef.current.has(eventId)) {
         return;
@@ -237,7 +252,12 @@ export function DrawingCanvas() {
 
       if (event.eventName === "tilesPainted" && event.args) {
         consola.info("Processing tilesPainted event:", eventId);
-        const args = event.args as { indices: bigint[]; r: number; g: number; b: number };
+        const args = event.args as {
+          indices: bigint[];
+          r: number;
+          g: number;
+          b: number;
+        };
         onBlockchainUpdate({
           indices: Array.isArray(args.indices) ? args.indices : [args.indices],
           r: Number(args.r),
@@ -255,7 +275,7 @@ export function DrawingCanvas() {
     if (processedEventsRef.current.size > 1000) {
       processedEventsRef.current.clear();
       // Re-add the current events
-      contractEvents.forEach(event => {
+      contractEvents.forEach((event) => {
         const eventId = `${event.transactionHash}-${event.logIndex}`;
         processedEventsRef.current.add(eventId);
       });
@@ -346,8 +366,12 @@ export function DrawingCanvas() {
 
           // Handle timeout case - transaction is in mempool, poll for receipt
           if (
-            errorMessage.includes("transaction was added to the mempool but wasn't processed") ||
-            errorMessage.includes("please use eth_getTransactionReceipt to poll")
+            errorMessage.includes(
+              "transaction was added to the mempool but wasn't processed"
+            ) ||
+            errorMessage.includes(
+              "please use eth_getTransactionReceipt to poll"
+            )
           ) {
             consola.info("Transaction in mempool, polling for receipt...");
             pollForTransactionReceipt(pixels);
@@ -431,7 +455,6 @@ export function DrawingCanvas() {
     );
   };
 
-
   // Fade user pixels over time
   const updateUserPixelOpacity = () => {
     const now = Date.now();
@@ -460,9 +483,14 @@ export function DrawingCanvas() {
   }
 
   // Bresenham's line algorithm to get all pixels between two points
-  function getLinePixels(x0: number, y0: number, x1: number, y1: number): Array<{x: number, y: number}> {
-    const pixels: Array<{x: number, y: number}> = [];
-    
+  function getLinePixels(
+    x0: number,
+    y0: number,
+    x1: number,
+    y1: number
+  ): Array<{ x: number; y: number }> {
+    const pixels: Array<{ x: number; y: number }> = [];
+
     const dx = Math.abs(x1 - x0);
     const dy = Math.abs(y1 - y0);
     const sx = x0 < x1 ? 1 : -1;
@@ -474,7 +502,12 @@ export function DrawingCanvas() {
 
     while (true) {
       // Ensure pixels are within canvas bounds
-      if (currentX >= 0 && currentX < canvasSize && currentY >= 0 && currentY < canvasSize) {
+      if (
+        currentX >= 0 &&
+        currentX < canvasSize &&
+        currentY >= 0 &&
+        currentY < canvasSize
+      ) {
         pixels.push({ x: currentX, y: currentY });
       }
 

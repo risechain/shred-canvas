@@ -37,6 +37,6 @@ export function getNetworkConfig(environment: string) {
 }
 
 export function useNetworkConfig() {
-  const environment = process.env.NEXT_PUBLIC_ENVIRONMENT || "production";
+  const environment = process.env.ENVIRONMENT || "production";
   return getNetworkConfig(environment);
 }
