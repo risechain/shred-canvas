@@ -28,10 +28,7 @@ import { showTransactionToast } from "./TransactionToast";
 
 type PixelWithTimestamp = TransactionQueue & {
   timestamp: number;
-  opacity: number;
 };
-
-const USER_PIXEL_FADE_DURATION = 5000; // 5 seconds
 
 export function DrawingCanvas() {
   // Canvas refs for double buffering
@@ -59,8 +56,11 @@ export function DrawingCanvas() {
   // Concurrent transaction system
   const batchIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const currentBatchRef = useRef<TransactionQueue[]>([]);
-  const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const BATCH_TIMEOUT_MS = 100;
+
+  // Canvas rendering optimization
+  const renderRequestRef = useRef<number | null>(null);
+  const needsRenderRef = useRef<boolean>(false);
 
   const { contract, chain, canvasSize } = useNetworkConfig();
 
@@ -316,9 +316,11 @@ export function DrawingCanvas() {
     const { r, g, b } = pixels[0];
     const tileIndices = pixels.map((tx) => tx.x * canvasSize + tx.y);
 
+    let nonce: number | undefined;
+
     try {
       // Get the next nonce for this transaction
-      const nonce = getNextNonce();
+      nonce = getNextNonce();
 
       const data = encodeFunctionData({
         abi: canvasAbi,
@@ -330,11 +332,22 @@ export function DrawingCanvas() {
         throw new Error("Account not available");
       }
 
+      // Estimate gas using viem
+      const gasEstimate = await publicClient.estimateGas({
+        account: account.address,
+        to: contract,
+        data,
+        value: BigInt(0),
+      });
+
+      // Add 20% buffer to gas estimate
+      const gas = (gasEstimate * 120n) / 100n;
+
       const serializedTransaction = await account.signTransaction({
         to: contract,
         data,
         nonce,
-        gas: BigInt(90_000 * 20_000 * tileIndices.length),
+        gas,
         gasPrice: BigInt(100),
         value: BigInt(0),
         chainId: chain.id,
@@ -389,9 +402,24 @@ export function DrawingCanvas() {
           if (errorMessage.includes("insufficient")) {
             showModal({ title: "Fund your Wallet", content: <FundWallet /> });
           }
+
+          // Remove user pixels on transaction error (not mempool timeout)
+          if (
+            !errorMessage.includes("transaction was added to the mempool") &&
+            !errorMessage.includes("please use eth_getTransactionReceipt")
+          ) {
+            consola.error("Transaction failed, removing pixels from overlay");
+            removeUserPixels(pixels);
+          }
         });
     } catch (error) {
-      // Check if it's a nonce-related error
+      // Rollback nonce if transaction failed before sending
+      if (nonce !== undefined) {
+        consola.warn(`Transaction failed before sending, rolling back nonce ${nonce}`);
+        // Reset nonce to re-sync with blockchain
+        resetNonce().catch(() => {});
+      }
+
       const errorMessage =
         error instanceof Error
           ? error.message.toLowerCase()
@@ -400,6 +428,14 @@ export function DrawingCanvas() {
       if (errorMessage.includes("insufficient")) {
         showModal({ title: "Fund your Wallet", content: <FundWallet /> });
       }
+
+      if (errorMessage.includes("gas")) {
+        consola.error("Gas estimation failed:", error);
+      }
+
+      // Remove user pixels on pre-send error
+      consola.error("Pre-send error, removing pixels from overlay");
+      removeUserPixels(pixels);
     }
   };
 
@@ -428,13 +464,25 @@ export function DrawingCanvas() {
 
   // Buffer 1 (User Overlay) Management
   const addUserPixel = (pixel: TransactionQueue) => {
-    const pixelWithTimestamp: PixelWithTimestamp = {
-      ...pixel,
-      timestamp: Date.now(),
-      opacity: 1.0,
-    };
-
     setUserPixels((prev) => {
+      // Check if pixel already exists at this coordinate
+      const existingIndex = prev.findIndex(
+        (p) => p.x === pixel.x && p.y === pixel.y
+      );
+
+      // If pixel exists with same color, don't update (prevents unnecessary re-renders)
+      if (existingIndex !== -1) {
+        const existing = prev[existingIndex];
+        if (existing.r === pixel.r && existing.g === pixel.g && existing.b === pixel.b) {
+          return prev; // No change needed
+        }
+      }
+
+      const pixelWithTimestamp: PixelWithTimestamp = {
+        ...pixel,
+        timestamp: Date.now(),
+      };
+
       // Remove any existing pixel at the same coordinate
       const filtered = prev.filter(
         (p) => !(p.x === pixel.x && p.y === pixel.y)
@@ -453,22 +501,6 @@ export function DrawingCanvas() {
           )
       )
     );
-  };
-
-  // Fade user pixels over time
-  const updateUserPixelOpacity = () => {
-    const now = Date.now();
-    setUserPixels((prev) => {
-      const updated = prev
-        .map((pixel) => {
-          const age = now - pixel.timestamp;
-          const opacity = Math.max(0, 1 - age / USER_PIXEL_FADE_DURATION);
-          return { ...pixel, opacity };
-        })
-        .filter((pixel) => pixel.opacity > 0); // Remove fully faded pixels
-
-      return updated;
-    });
   };
 
   function getCoordinatesFromIndex(index: number) {
@@ -863,7 +895,7 @@ export function DrawingCanvas() {
       data[i + 3] = 0; // Alpha = 0 (transparent)
     }
 
-    // Apply user pixels with fading
+    // Apply user pixels at full opacity
     userPixels.forEach((pixel) => {
       const index = coordToBufferIndex(pixel.x, pixel.y);
       const pixelIndex = index * 4;
@@ -872,7 +904,7 @@ export function DrawingCanvas() {
         data[pixelIndex] = pixel.r; // R
         data[pixelIndex + 1] = pixel.g; // G
         data[pixelIndex + 2] = pixel.b; // B
-        data[pixelIndex + 3] = Math.floor(pixel.opacity * 255); // Alpha with fade
+        data[pixelIndex + 3] = 255; // Alpha at full opacity
       }
     });
 
@@ -897,31 +929,38 @@ export function DrawingCanvas() {
     mainContext.drawImage(buffer1Ref.current, 0, 0);
   };
 
+  // Batch canvas rendering using requestAnimationFrame
+  const scheduleRender = useCallback(() => {
+    if (!needsRenderRef.current) {
+      needsRenderRef.current = true;
+      renderRequestRef.current = requestAnimationFrame(() => {
+        renderBuffer1();
+        renderCanvas();
+        setPendingTx(userPixels.length);
+        needsRenderRef.current = false;
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userPixels.length]);
+
   // Initialize buffers when blockchain data is available
   useEffect(() => {
     initializeBuffer2();
+    scheduleRender();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tilesData, blockchainPixels]);
 
-  // Update user overlay when user pixels change
+  // Update canvas when user pixels change
   useEffect(() => {
-    renderBuffer1();
+    scheduleRender();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userPixels]);
 
-  // Composite buffers to main canvas
+  // Cleanup animation frame on unmount
   useEffect(() => {
-    renderCanvas();
-    setPendingTx(userPixels.length);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userPixels, blockchainPixels, tilesData]);
-
-  // Start fade timer for user pixels
-  useEffect(() => {
-    fadeIntervalRef.current = setInterval(updateUserPixelOpacity, 100);
     return () => {
-      if (fadeIntervalRef.current) {
-        clearInterval(fadeIntervalRef.current);
+      if (renderRequestRef.current) {
+        cancelAnimationFrame(renderRequestRef.current);
       }
     };
   }, []);

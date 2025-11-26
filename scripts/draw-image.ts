@@ -189,6 +189,7 @@ async function drawToCanvas(pixels: Pixel[][]): Promise<void> {
     const gasPriceGwei = feeData.gasPrice ? ethers.formatUnits(feeData.gasPrice, 'gwei') : 'unknown';
     console.log(`Current gas price: ${gasPriceGwei} gwei`);
   } catch (error) {
+    console.log("error: ", error)
     console.log('Could not fetch gas price, proceeding with default');
   }
 
@@ -234,7 +235,7 @@ async function drawToCanvas(pixels: Pixel[][]): Promise<void> {
   }
 
   // Process jobs with concurrent transactions and retry logic
-  let pendingJobs = [...jobs];
+  const pendingJobs = [...jobs];
   let completedJobs = 0;
   
   while (pendingJobs.length > 0) {
